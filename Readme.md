@@ -1,6 +1,6 @@
 # im-JS (Check it out [here](https://tejas-h5.github.io/imjs/))
 
-[![CI](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
+[![Test, build, deploy](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
 
 `imJS` is an immediate-mode UI framework that rerenders your UI at your monitor's refresh-rate
     with `requestAnimationFrame`!
