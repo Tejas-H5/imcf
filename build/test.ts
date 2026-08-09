@@ -36,7 +36,7 @@ for await (const file of fs.glob("**/*.test.ts", {
 }
 
 function runTests(bundledJavaScript: string) {
-	new Function(`${bundledJavaScript}`)();
+	return new Function(`${bundledJavaScript}`)();
 }
 
 function filePathToImportPath(filepath: string): string {

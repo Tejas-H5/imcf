@@ -51,9 +51,13 @@ export function check(r: Result, outcome: boolean, message = ""): boolean {
 	return outcome;
 }
 
+function toString(val: unknown) {
+	return "" + val;
+}
+
 export function checkEqual(r: Result, a: unknown, b: unknown, message = ""): boolean {
 	if (!check(r, a === b, message)) {
-		failure(r, `\ngot   : ${JSON.stringify(a)},\nwanted: ${JSON.stringify(b)}\n`);
+		failure(r, `\ngot   : ${toString(a)},\nwanted: ${toString(b)}\n`);
 		return false;
 	}
 	return true;
@@ -71,11 +75,45 @@ export function assertEqual<T>(r: Result, actual: unknown, expected: T, message:
 	}
 }
 
+export function getThrownError(fn: () => void): unknown {
+	let err: unknown;
+
+	// Monkey patch error, so that error logging is disabled 
+	// specifically while checking for exceptions
+	const consoleErrorOriginal = console.error;
+	try {
+		console.error = () => {};
+		fn();
+	} catch(e) {
+		err = e;
+	} finally {
+		console.error = consoleErrorOriginal;
+	}
+
+	return err;
+}
+
+export function checkThrows(r: Result, fn: () => void, errorMessage: string, message = ""): unknown {
+	const err = getThrownError(fn);
+
+	if (err) {
+		if (err instanceof Error) {
+			checkEqual(r, err.message, errorMessage, message);
+		} else {
+			failure(r, "Expected an `Error` to be thrown", message);
+		}
+	} else {
+		failure(r, "Expected a throw", message);
+	}
+
+	return err;
+}
+
 export function checkDeepEqual(r: Result, a: unknown, b: unknown) {
 	const result = deepEquals(a, b);
 
 	if (!check(r, result.mismatches.length === 0)) {
-		const message = [`got: ${JSON.stringify(a)} !== expected: ${JSON.stringify(b)}`];
+		const message = [`got: ${toString(a)} !== expected: ${toString(b)}`];
 		for (const mismatch of result.mismatches) {
 			message.push(`${mismatch.path} - ${mismatch.expected} !== ${mismatch.got}`)
 		}
@@ -83,9 +121,14 @@ export function checkDeepEqual(r: Result, a: unknown, b: unknown) {
 	}
 }
 
-export function failure(r: Result, message: string) {
+export function failure(r: Result, message: string, optMessage?: string) {
+	r.checks += 1;
 	if (!r.fails) {
 		r.fails = [];
+	}
+
+	if (optMessage) {
+		message += " - " + optMessage;
 	}
 
 	r.fails.push(message);

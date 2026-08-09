@@ -77,7 +77,7 @@ function newCache(): ImCache {
     c[CACHE_TOTAL_DESTRUCTORS] = 0;
     c[CACHE_TOTAL_MAP_ENTRIES] = 0;
     c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME] = 0;
-    c[CACHE_IS_RENDERING] = true; 
+    c[CACHE_IS_RENDERING] = false; 
     c[CACHE_RENDER_COUNT] = 0;
     c[CACHE_FPS_COUNTER_STATE] = newFpsCounterState();
     c[CACHE_PARENT_STACK] = [];
@@ -257,7 +257,12 @@ function getFpsCounterState(c: ImCache): FpsCounterState {
 // Enqueues a cache rerender. Usually to process an event again after the 
 // current render without waiting for the next animation frame, or rerender once outside the animation frame.
 function rerenderCache(c: ImCache) {
-    c[CACHE_RERENDER_FN](c);
+    if (c[CACHE_IS_RENDERING] === true) {
+        c[CACHE_NEEDS_RERENDER] = true;
+    } else {
+        c[CACHE_NEEDS_RERENDER] = false;
+        c[CACHE_RERENDER_FN](c);
+    }
 }
 
 function noOp() {}
@@ -275,16 +280,17 @@ function imCacheEnd(c: ImCache) {
 
     c[CACHE_IS_RENDERING] = false;
 
+    // Some things may occur while we're rendering the framework that require is to immediately rerender
+    // our components to not have a stale UI. Those events will set this flag to true, so that
+    // We can eventually reach here, and do a full rerender.
     const needsRerender = c[CACHE_NEEDS_RERENDER];
+
     if (needsRerender === true) {
+        c[CACHE_NEEDS_RERENDER] = false;
+
         // Other things need to rerender the cache long after we've done a render. Mainly, DOM UI events - 
         // once we get the event, we trigger a full rerender, and pull the event out of state and use it's result in the process.
         rerenderCache(c);
-
-        // Some things may occur while we're rendering the framework that require is to immediately rerender
-        // our components to not have a stale UI. Those events will set this flag to true, so that
-        // We can eventually reach here, and do a full rerender.
-        c[CACHE_NEEDS_RERENDER] = false;
     }
 
     if (c[CACHE_IS_ANIMATION_FRAME] === true) {
@@ -347,7 +353,44 @@ function imCacheEntriesBegin<T>(
 
 function imCacheEntriesEnd(c: ImCache) {
     const entries = c[CACHE_CURRENT_ENTRIES];
-    const idx = --c[CACHE_IDX];
+    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+    if (map !== undefined) {
+        c[CACHE_TOTAL_MAP_ENTRIES] += map.size;
+
+        const removeLevel = entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL];
+        if (removeLevel === REMOVE_LEVEL_DETATCHED) {
+            for (const v of map.values()) {
+                if (v.rendered === false) {
+                    cacheEntriesOnRemove(v.entries);
+                }
+            }
+        } else if (removeLevel === REMOVE_LEVEL_DESTROYED) {
+            // This is now the default for keyed elements. You will avoid memory leaks if they
+            // get destroyed instead of detatched. 
+            for (const [k, v] of map) {
+                if (v.rendered === false) {
+                    cacheEntriesOnDestroy(c, v.entries);
+                    map.delete(k);
+                }
+            }
+        } else {
+            throw new Error("Unknown remove level");
+        }
+    }
+
+    let idx = entries[ENTRIES_IDX];
+    const lastIdx = entries[ENTRIES_LAST_IDX];
+    if (idx !== lastIdx) {
+        if (lastIdx === ENTRIES_ITEMS_START - 2) {
+            // This was the first render. All g
+            entries[ENTRIES_LAST_IDX] = idx;
+        } else if (idx !== ENTRIES_ITEMS_START - 2) {
+            // This was not the first render...
+            throw new Error("You should be rendering the same number of things in every render cycle");
+        }
+    }
+
+    idx = --c[CACHE_IDX];
     c[CACHE_CURRENT_ENTRIES] = c[idx];
     assert(idx >= CACHE_ENTRIES_START - 1);
     return entries;
@@ -671,6 +714,11 @@ function imKeyedEnd(c: ImCache) {
 }
 
 // You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
+// By the underlying API itself that you are wrapping, like event listeners or resize observers etc.
+// Most of the time, it's better to decouple the lifecycle of the item from the specific position in the UI heriarchy.
+// For example - you don't need hundreds of components to independently subscribe to global mouse event handlers - this
+// can be done once at the global level by one system. 
+// Something similar can be said about making network requests, local storage requests, web sockets, and so on.
 function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
     const entries = c[CACHE_CURRENT_ENTRIES];
     let destructors = entries[ENTRIES_DESTRUCTORS];
@@ -812,43 +860,6 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
         const message = `Opening and closing blocks may not be lining up right. You may have missed or inserted some blocks by accident. `
             + "expected " + internalTypeToString(entries[ENTRIES_INTERNAL_TYPE]) + ", got " + internalTypeToString(internalType);
         throw new Error(message)
-    }
-
-    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
-    if (map !== undefined) {
-        c[CACHE_TOTAL_MAP_ENTRIES] += map.size;
-
-        const removeLevel = entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL];
-        if (removeLevel === REMOVE_LEVEL_DETATCHED) {
-            for (const v of map.values()) {
-                if (v.rendered === false) {
-                    cacheEntriesOnRemove(v.entries);
-                }
-            }
-        } else if (removeLevel === REMOVE_LEVEL_DESTROYED) {
-            // This is now the default for keyed elements. You will avoid memory leaks if they
-            // get destroyed instead of detatched. 
-            for (const [k, v] of map) {
-                if (v.rendered === false) {
-                    cacheEntriesOnDestroy(c, v.entries);
-                    map.delete(k);
-                }
-            }
-        } else {
-            throw new Error("Unknown remove level");
-        }
-    }
-
-    const idx = entries[ENTRIES_IDX];
-    const lastIdx = entries[ENTRIES_LAST_IDX];
-    if (idx !== lastIdx) {
-        if (lastIdx === ENTRIES_ITEMS_START - 2) {
-            // This was the first render. All g
-            entries[ENTRIES_LAST_IDX] = idx;
-        } else if (idx !== ENTRIES_ITEMS_START - 2) {
-            // This was not the first render...
-            throw new Error("You should be rendering the same number of things in every render cycle");
-        }
     }
 
     imCacheEntriesEnd(c);
@@ -1033,17 +1044,12 @@ const MEMO_CHANGED = 1;
  * you want to happen on a change but NOT the initial renderer.
  */
 const MEMO_FIRST_RENDER = 2;
-/** 
- * returned by {@link imMemo} if this is is caused by the component
- * re-entering the conditional rendering codepath.
- */
-const MEMO_FIRST_RENDER_CONDITIONAL = 3;
 
 export type MemoResult
     = typeof MEMO_NOT_CHANGED
     | typeof MEMO_FIRST_RENDER
     | typeof MEMO_CHANGED
-    | typeof MEMO_FIRST_RENDER_CONDITIONAL;
+    ;
 
 /**
  * Returns non-zero when either:
@@ -1115,7 +1121,7 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
             result = MEMO_CHANGED;
         }
     } else if (entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] === true) {
-        result = MEMO_FIRST_RENDER_CONDITIONAL;
+        result = MEMO_FIRST_RENDER;
     }
 
     return result;
@@ -1150,6 +1156,10 @@ export type TryState = {
  * ```
  */
 function imTry(c: ImCache): TryState {
+    if (c[CACHE_RERENDER_FN] === undefined) {
+        throw new Error("Using imTry requires having set up a rerender method with im.setRenderFn - we need to rerender your state one more time at the very end if an error was thrown");
+    }
+
     const entries = imImmediateModeBlockBegin(c, INTERNAL_TYPE_TRY_BLOCK);
 
     let tryState = imGet(c, imTry);
@@ -1217,9 +1227,22 @@ function getRenderCount(c: ImCache) {
     return c[CACHE_RENDER_COUNT];
 }
 
-function setRenderFn(c: ImCache, imFn: ImCacheRerenderFn) {
-    if (c[CACHE_RERENDER_FN] !== imFn) {
-        c[CACHE_RERENDER_FN] = imFn;
+function setRenderFn(c: ImCache, imRenderFn: ImCacheRerenderFn) {
+    if (c[CACHE_RERENDER_FN] === undefined) {
+        c[CACHE_RERENDER_FN] = imRenderFn;
+    } else if (c[CACHE_RERENDER_FN] !== imRenderFn) {
+        console.log("hot-swapping render function");
+
+        cacheEntriesOnDestroy(c, c[CACHE_ROOT_ENTRIES]);
+        c[CACHE_RERENDER_FN] = imRenderFn;
+
+        try {
+            imRenderFn(c);
+        } catch {
+            c[CACHE_ROOT_ENTRIES] = newCacheEntries(INTERNAL_TYPE_CACHE);
+            // We are already about to renader to our cache, so we don't need to call
+            // imRenderFn(c); here
+        }
     }
 }
 
@@ -1242,7 +1265,7 @@ export const im = {
     State: imState,
     // Use this to add a destructor. Destructors should not be relied upon to execute business logic on entry-list exit, because
     // they may or may not run depending on the 'remove level' you've set, which is purely based on
-    // the performance characteristics you want.
+    // the performance/memory tradeoff you want.
     // They should only be used to free memory/resources, like event listeners, various observers, etc.
     onImmediateModeBlockDestroyed, 
 
@@ -1257,7 +1280,7 @@ export const im = {
 
     /** Executing code when something else has changed */
     Memo: imMemo,
-    MEMO_NOT_CHANGED, MEMO_CHANGED, MEMO_FIRST_RENDER, MEMO_FIRST_RENDER_CONDITIONAL,
+    MEMO_NOT_CHANGED, MEMO_CHANGED, MEMO_FIRST_RENDER,
 
     /** 
      * Executing code just once. Should behave identically to imMemo(c, true), but will be more performant since
@@ -1283,7 +1306,9 @@ export const im = {
      */
     pushParent, popParent, getParent, getParentOrUndefined, getNumParents,
 
-    /** You won't need these for your app, but you may need these to build a custom adapter */
+    /**
+     * You won't need these for your app, but you may need these to build a custom adapter 
+     */
 
     getCurrentCacheEntries,   // Gets the current entry list
     getRootEntries,           // Gets whatever entries were in the call to {@link im.newCache}

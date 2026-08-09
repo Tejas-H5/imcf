@@ -75,59 +75,59 @@ function deepEqualsInternal<T>(
         return false;
     }
 
-    let popPath = false;
-    let matched = true;
+    let matched = false;
 
     if (Array.isArray(a)) {
-        matched = false;
         if (Array.isArray(b)) {
-            matched = true;
-            for (let i = 0; i < a.length; i++) {
-                if (!deepEqualsInternal(result, a[i], b[i], opts, "[" + i + "]")) {
-                    matched = false;
-                    if (opts.failFast) break;
-                }
-            }
-        }
-    } else if (a instanceof Set) {
-        matched = false;
-        if (b instanceof Set && b.size === a.size) {
-            matched = true;
-            for (const val of a) {
-                if (!b.has(val)) {
-                    matched = false;
-                    break;
-                }
-            }
-        }
-    } else if (a instanceof Map) {
-        matched = false;
-        if (b instanceof Map && a.size === b.size) {
-            matched = true;
-
-            for (const [k, aVal] of a) {
-                if (b.has(k)) {
-                    const bVal = b.get(k);
-                    if (!deepEqualsInternal(result, aVal, bVal, opts, ".get(" + k + ")")) {
+            if (a.length === b.length) {
+                matched = true;
+                for (let i = 0; i < a.length; i++) {
+                    if (!deepEqualsInternal(result, a[i], b[i], opts, "[" + i + "]")) {
                         matched = false;
                         if (opts.failFast) break;
                     }
                 }
             }
         }
-    } else {
-        // a is just an object
-        for (const k in a) {
-            if (!(k in b)) {
-                matched = false;
-                if (opts.failFast) break;
-            }
-
-            if (!deepEqualsInternal(result, a[k], b[k], opts, "." + k)) {
-                matched = false;
-                if (opts.failFast) break;
+    } else if (a instanceof Set) {
+        if (b instanceof Set) {
+            if (b.size === a.size) {
+                matched = true;
+                for (const val of a) {
+                    if (!b.has(val)) {
+                        matched = false;
+                        break;
+                    }
+                }
             }
         }
+    } else if (a instanceof Map) {
+        if (b instanceof Map) {
+            if (a.size === b.size) {
+                matched = true;
+
+                for (const [k, aVal] of a) {
+                    if (b.has(k)) {
+                        const bVal = b.get(k);
+                        if (!deepEqualsInternal(result, aVal, bVal, opts, ".get(" + k + ")")) {
+                            matched = false;
+                            if (opts.failFast) break;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // a is just an object
+        const aEntries = Object.entries(a);
+        const bEntries = Object.entries(b);
+        if (!deepEqualsInternal(result, aEntries, bEntries, opts, pathKey)) {
+            matched = false;
+        }
+    }
+
+    if (!matched) {
+        pushDeepEqualsMismatch(result, a, b);
     }
 
     result.currentPath.pop();
