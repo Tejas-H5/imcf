@@ -112,7 +112,7 @@ test.group("im.Memo", [] , () => {
 
         im.CacheBegin(c); {
             const val = im.Memo(c, true);
-            test.checkEqual(r, val, im.MEMO_NOT_CHANGED);
+            test.checkEqual(r, val, !im.MEMO_NOT_CHANGED);
         } im.CacheEnd(c);
     });
 

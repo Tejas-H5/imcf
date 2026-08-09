@@ -12,7 +12,6 @@ Time to start building!
         software loads fast, and can read/write it's state whenever it wants.
     This also means that the framework won't be suited to debugging web apps, where your
         site might populate after some back and forth with a server.
-- Real tests (written and curated by myself, not shat out in the hundreds by AI)
 - The global event system currently doesn't work well for mobile/touch interactions, need to fix that
 - In the future, I plan on making a static analysis tool (probably just an eslint rule) that matches imXBegin and imXEnd 
     and lets you know at compile time if these opening/closing pairs are matching or not. 

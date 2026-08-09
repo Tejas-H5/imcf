@@ -52,10 +52,10 @@ const options: esbuild.BuildOptions = {
 	stdin: {
 		// Can't believe this works!
 		// No reason why I can't put all the tests into a HTML file or something like that.
-		contents: testRunnerTemplate.replace(/ALL_TESTS/g, entrypoints.map(e => {
-			const importPath = filePathToImportPath(e);
-			return `import "${importPath}";`
-		}).join("\n")),
+		contents: testRunnerTemplate
+			.replace(/ALL_TESTS/g, entrypoints.map(e => `import "${filePathToImportPath(e)}";`).join("\n"))
+			.replace(/IS_CI/g, config === "watch" ? "false" : "true")
+		,
 		resolveDir: BASE_DIR,
 		loader: "ts",
 	},

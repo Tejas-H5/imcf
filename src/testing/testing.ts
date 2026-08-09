@@ -216,9 +216,12 @@ export function file(name: string, _coveringSymbols: any = null) {
 	pushGroup(name);
 }
 
-export function runAll(): Context {
+export function runAll(isCi: boolean): Context {
 	let hasDebugTests = false;
-	{
+	if (!isCi) {
+		// Disable isolating specific tests for debug in a CI environment.
+		// CI should run every test every time.
+
 		const recomputePreRunAggregateStats = (g: Group) => {
 			if (g.tests) {
 				for (const test of g.tests) {
@@ -272,7 +275,16 @@ export function runAll(): Context {
 	return result;
 }
 
-function runAllInternal(groups: Group[], debugOnly: boolean) {
+export function anyFails(result: Context): boolean {
+	for (const group of result.groups) {
+		if (group._fails > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function runAllInternal(groups: Group[], debugOnly: boolean): Context {
 	for (const group of groups) {
 		if (!group.tests && !group.subgroups) {
 			add("This group didn't have any tests", r => {
