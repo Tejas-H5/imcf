@@ -2467,9 +2467,10 @@ Here are all the outstanding tasks:
 - Maybe `lerp` isn't the interpolation you had in mind, or maybe it is, and you want
     to implement that #url[framerate independent, https://www.youtube.com/watch?v=LSNQuFEDOyQ]
     lerp.
+- Escape button doesn't cancel the drag operation yet
 ]
 
 I'le leave this as an exercise to the reader.
 
-Got ideas for a tutorial? 
+Want to know how to do a particular thing?
 Send them through #url[here, https://github.com/Tejas-H5/imjs].
