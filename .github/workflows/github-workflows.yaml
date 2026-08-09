@@ -1,7 +1,7 @@
 # Simple workflow for deploying static content to GitHub Pages
 # NOTE: I got the initial skeleton for this deploy script from https://vitejs.dev/guide/static-deploy#github-pages
 #   If you ever need to fix various deprecation warnings, they may have already done so, so it's worth checking
-name: Deploy static content to Pages
+name: Test, build, deploy
 
 on:
   # Runs on pushes targeting the default branch
