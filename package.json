@@ -1,7 +1,7 @@
 {
   "name": "im-js",
   "private": true,
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "An immediate-mode UI framework",
   "type": "module",
   "scripts": {
@@ -24,7 +24,12 @@
     "./im-ui": {
       "import": "./src/im-js/im-ui/index.ts",
       "types": "./src/im-js/im-ui/index.ts"
-    }
+    },
+    "./im-ui/components/*": {
+      "import": "./src/im-js/im-ui/components/*.ts",
+      "types": "./src/im-js/im-ui/components/*.ts"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "src/im-js"

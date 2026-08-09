@@ -1229,7 +1229,7 @@ function updateKeysState(
     }
 }
 
-function isKeyPressed(keysState: KeyboardState, key: NormalizedKey): boolean {
+function isKeyPressed(key: NormalizedKey, keysState = getKeyboard()): boolean {
     const keys = keysState.keys.keys;
     for (let i = 0; i < keys.pressed.length; i++) {
         if (keys.pressed[i] === key) return true;
@@ -1237,7 +1237,7 @@ function isKeyPressed(keysState: KeyboardState, key: NormalizedKey): boolean {
     return false;
 }
 
-function isKeyRepeated(keysState: KeyboardState, key: NormalizedKey): boolean {
+function isKeyRepeated(key: NormalizedKey, keysState = getKeyboard()): boolean {
     const keys = keysState.keys.keys;
     for (let i = 0; i < keys.repeated.length; i++) {
         if (keys.repeated[i] === key) return true;
@@ -1245,13 +1245,13 @@ function isKeyRepeated(keysState: KeyboardState, key: NormalizedKey): boolean {
     return false;
 }
 
-function isKeyPressedOrRepeated(keysState: KeyboardState, key: NormalizedKey): boolean {
-    if (isKeyPressed(keysState, key)) return true;
-    if (isKeyRepeated(keysState, key)) return true;
+function isKeyPressedOrRepeated(key: NormalizedKey, keysState = getKeyboard()): boolean {
+    if (isKeyPressed(key, keysState)) return true;
+    if (isKeyRepeated(key, keysState)) return true;
     return false;
 }
 
-function isKeyReleased(keysState: KeyboardState, key: NormalizedKey): boolean {
+function isKeyReleased(key: NormalizedKey, keysState = getKeyboard()): boolean {
     const keys = keysState.keys.keys;
     for (let i = 0; i < keys.released.length; i++) {
         if (keys.released[i] === key) return true;
@@ -1259,8 +1259,8 @@ function isKeyReleased(keysState: KeyboardState, key: NormalizedKey): boolean {
     return false;
 }
 
-function isKeyHeld(keysState: KeyboardState, key: NormalizedKey): boolean {
-    if (isKeyPressed(keysState, key)) {
+function isKeyHeld(key: NormalizedKey, keysState = getKeyboard()): boolean {
+    if (isKeyPressed(key, keysState)) {
         return true;
     }
 
@@ -1272,7 +1272,7 @@ function isKeyHeld(keysState: KeyboardState, key: NormalizedKey): boolean {
 }
 
 
-function isLetterPressed(keysState: KeyboardState, letter: string): boolean {
+function isLetterPressed(letter: string, keysState = getKeyboard()): boolean {
     const letters = keysState.keys.letters;
     for (let i = 0; i < letters.pressed.length; i++) {
         if (letters.pressed[i] === letter) return true;
@@ -1280,7 +1280,7 @@ function isLetterPressed(keysState: KeyboardState, letter: string): boolean {
     return false;
 }
 
-function isLetterRepeated(keysState: KeyboardState, letter: string): boolean {
+function isLetterRepeated(letter: string, keysState = getKeyboard()): boolean {
     const letters = keysState.keys.letters;
     for (let i = 0; i < letters.repeated.length; i++) {
         if (letters.repeated[i] === letter) return true;
@@ -1288,13 +1288,13 @@ function isLetterRepeated(keysState: KeyboardState, letter: string): boolean {
     return false;
 }
 
-function isLetterPressedOrRepeated(keysState: KeyboardState, letter: string): boolean {
-    if (isLetterPressed(keysState, letter)) return true;
-    if (isLetterRepeated(keysState, letter)) return true;
+function isLetterPressedOrRepeated(letter: string, keysState = getKeyboard()): boolean {
+    if (isLetterPressed(letter, keysState)) return true;
+    if (isLetterRepeated(letter, keysState)) return true;
     return false;
 }
 
-function isLetterReleased(keysState: KeyboardState, letter: string): boolean {
+function isLetterReleased(letter: string, keysState = getKeyboard()): boolean {
     const letters = keysState.keys.letters;
     for (let i = 0; i < letters.released.length; i++) {
         if (letters.released[i] === letter) return true;
@@ -1302,7 +1302,7 @@ function isLetterReleased(keysState: KeyboardState, letter: string): boolean {
     return false;
 }
 
-function isLetterHeld(keysState: KeyboardState, letter: string): boolean {
+function isLetterHeld(letter: string, keysState = getKeyboard()): boolean {
     const letters = keysState.keys.letters;
     for (let i = 0; i < letters.held.length; i++) {
         if (letters.held[i] === letter) return true;

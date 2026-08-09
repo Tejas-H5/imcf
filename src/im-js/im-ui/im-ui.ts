@@ -1,5 +1,3 @@
-// imui v0.00.4
-
 import { imdom, im, ImCache, el } from "im-js";
 
 ///////////////////////////
@@ -304,12 +302,14 @@ export const COL_REVERSE = 7 as DisplayTypeInstance;
 // No more TABLE, TABLE_ROW, TABLE_CELL. Use display: grid + grid-template-columns
 export const INLINE_ROW = 11 as DisplayTypeInstance;
 export const INLINE_COL = 12 as DisplayTypeInstance;
+export const ROW_WRAP = 13 as DisplayTypeInstance;
 
 export type DisplayType 
     = typeof BLOCK 
     | typeof INLINE_BLOCK 
     | typeof ROW 
     | typeof ROW_REVERSE 
+    | typeof ROW_WRAP 
     | typeof COL 
     | typeof COL_REVERSE 
     | typeof INLINE_ROW
@@ -330,6 +330,7 @@ const cnInline      = cssb.cn("inline",      [` { display: inline; }`]);
 const cnRow         = cssb.cn("row",         [` { display: flex; flex-direction: row; }`]);
 const cnInlineRow   = cssb.cn("inline-row",  [` { display: inline-flex; flex-direction: row; }`]);
 const cnRowReverse  = cssb.cn("row-reverse", [` { display: flex; flex-direction: row-reverse; }`]);
+const cnRowWrap     = cssb.cn("row-wrap",    [` { display: flex; flex-direction: row; flex-wrap: wrap; }`]);
 const cnCol         = cssb.cn("col",         [` { display: flex; flex-direction: column; }`]);
 const cnInlineCol   = cssb.cn("inline-col",  [` { display: inline-flex; flex-direction: column; }`]);
 const cnColReverse  = cssb.cn("col-reverse", [` { display: flex; flex-direction: column-reverse; }`]);
@@ -351,6 +352,7 @@ function imLayout(c: ImCache, type: DisplayType) {
             case INLINE:       imdom.setClass(c, cnInline, false);             break;
             case ROW:          imdom.setClass(c, cnRow, false);                break;
             case ROW_REVERSE:  imdom.setClass(c, cnRowReverse, false);         break;
+            case ROW_WRAP:     imdom.setClass(c, cnRowWrap, false);            break;
             case COL:          imdom.setClass(c, cnCol, false);                break;
             case COL_REVERSE:  imdom.setClass(c, cnColReverse, false);         break;
             case INLINE_ROW:   imdom.setClass(c, cnInlineRow, false);          break;
@@ -363,6 +365,7 @@ function imLayout(c: ImCache, type: DisplayType) {
             case INLINE:       imdom.setClass(c, cnInline, true);              break;
             case ROW:          imdom.setClass(c, cnRow, true);                 break;
             case ROW_REVERSE:  imdom.setClass(c, cnRowReverse, true);          break;
+            case ROW_WRAP:     imdom.setClass(c, cnRowWrap, true);             break;
             case COL:          imdom.setClass(c, cnCol, true);                 break;
             case COL_REVERSE:  imdom.setClass(c, cnColReverse, true);          break;
             case INLINE_ROW:   imdom.setClass(c, cnInlineRow, true);           break;
