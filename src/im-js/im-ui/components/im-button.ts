@@ -1,7 +1,5 @@
-// im-button v0.0.0
-
-import { el, im, ImCache, imdom } from "/im-js";
-import { cssVars, imui } from "/im-js/im-ui";
+import { el, im, ImCache, imdom } from "im-js";
+import { cssVars, imui } from "im-js/im-ui";
 
 const cssb = imui.newCssBuilder("button");
 
