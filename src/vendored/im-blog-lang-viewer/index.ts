@@ -16,7 +16,7 @@ import {
 	VH
 } from "im-js/im-ui";
 import { imButtonStyle } from "im-js/im-ui/components/im-button";
-import { imCodeViewer } from "./im-code-viewer";
+import { imCodeViewer } from "im-code-viewer";
 
 export type MarkupRendererState = {
 	blogpost: bl.Blogpost | undefined;

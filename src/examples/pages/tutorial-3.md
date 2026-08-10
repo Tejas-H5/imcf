@@ -1736,10 +1736,11 @@ function imRowEnd(c: ImCache) {
 I've also tried to fix the width, but there are a couple of seconds at the start where 
 it is very wrong.
 Refresh the page and scroll straight to this example to find out.
-I've got no clue how to fix it actually. 
-I'll leave it as an exercise to someone reading this. 
-PRs accepted.
+~I've got no clue how to fix it actually. 
+I'll leave it as an exercise to someone reading this~ 
+I've since fixed this in the final section.
 The other fixups are also an exercise to the reader.
+PRs accepted.
 
 ## Code cleanup
 
@@ -2470,7 +2471,17 @@ Here are all the outstanding tasks:
 - Escape button doesn't cancel the drag operation yet
 ]
 
-I'le leave this as an exercise to the reader.
+There's even more features that can be added:
+#list[
+- Shift-select multiple cards and move many things between columns at once
+- Drag around the order of the columns
+- Renameable columns
+- Add/remove columns
+- Multiple kanban boards
+- Time tracking 
+]
+
+I'll leave this as an exercise to the reader.
 
 Want to know how to do a particular thing?
 Send them through #url[here, https://github.com/Tejas-H5/imjs].

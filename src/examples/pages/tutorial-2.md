@@ -195,12 +195,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     // I've added this to prevent up/down arrows from scrolling the webpage,
                     // but other hotkeys still need to work.
@@ -294,12 +294,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -415,12 +415,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -435,7 +435,7 @@ function imGame(c: ImCache) {
                     player.y = clamp(player.y, -halfHeight, halfHeight);
 
                     // Holding Z now adds pullets into the bullet array
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newBullet();
                         bullet.posX = player.x;
                         bullet.posY = player.y;
@@ -631,12 +631,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -651,7 +651,7 @@ function imGame(c: ImCache) {
                     // The offscreen behaviour is also something
                     // that bullets have, so this logic can be centralised as well.
 
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newGameObject(game, BULLET);
                         bullet.posX = player.posX;
                         bullet.posY = player.posY;
@@ -806,12 +806,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -821,7 +821,7 @@ function imGame(c: ImCache) {
                     player.velX = xAxis * movementSpeed;
                     player.velY = yAxis * movementSpeed;
 
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newGameObject(game, BULLET);
                         bullet.posX = player.posX;
                         bullet.posY = player.posY;
@@ -1007,12 +1007,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -1022,7 +1022,7 @@ function imGame(c: ImCache) {
                     player.velX = xAxis * movementSpeed;
                     player.velY = yAxis * movementSpeed;
 
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newGameObject(game, BULLET);
                         bullet.posX = player.posX;
                         bullet.posY = player.posY;
@@ -1244,12 +1244,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -1259,7 +1259,7 @@ function imGame(c: ImCache) {
                     player.velX = xAxis * movementSpeed;
                     player.velY = yAxis * movementSpeed;
 
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newGameObject(game, BULLET);
                         bullet.posX = player.posX;
                         bullet.posY = player.posY;
@@ -1514,12 +1514,12 @@ function imGame(c: ImCache) {
                     const keyboard = imdom.getKeyboard();
 
                     const xAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -1529,7 +1529,7 @@ function imGame(c: ImCache) {
                     player.velX = xAxis * movementSpeed;
                     player.velY = yAxis * movementSpeed;
 
-                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                    if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
                         const bullet = newGameObject(game, PLAYER_BULLET);
                         bullet.posX = player.posX;
                         bullet.posY = player.posY;
@@ -1840,12 +1840,12 @@ function imGameInner(c: ImCache, root: HTMLElement) {
         const keyboard = imdom.getKeyboard();
 
         const xAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+            imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
         const yAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
             if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -1855,7 +1855,7 @@ function imGameInner(c: ImCache, root: HTMLElement) {
         player.velX = xAxis * movementSpeed;
         player.velY = yAxis * movementSpeed;
 
-        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+        if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
             const bullet = newGameObject(game, PLAYER_BULLET);
             bullet.posX = player.posX;
             bullet.posY = player.posY;
@@ -2166,12 +2166,12 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
         const keyboard = imdom.getKeyboard();
 
         const xAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+            imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
         const yAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
             if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -2181,7 +2181,7 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
         player.velX = xAxis * movementSpeed;
         player.velY = yAxis * movementSpeed;
 
-        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+        if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
             const bullet = newGameObject(game, PLAYER_BULLET);
             bullet.posX = player.posX;
             bullet.posY = player.posY;
@@ -2506,12 +2506,12 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
         const keyboard = imdom.getKeyboard();
 
         const xAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
-            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
+            imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
 
         const yAxis = 
-            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
-            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+            imdom.isKeyHeld(key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
             if (keyboard.keyDown) keyboard.keyDown.preventDefault();
@@ -2521,7 +2521,7 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
         player.velX = xAxis * movementSpeed;
         player.velY = yAxis * movementSpeed;
 
-        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+        if (imdom.isKeyHeld(key.Z) && game.shootTimer <= 0) {
             const bullet = newGameObject(game, PLAYER_BULLET);
             bullet.posX = player.posX;
             bullet.posY = player.posY;

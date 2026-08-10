@@ -9,7 +9,7 @@ import {
     imRenderBlogLangBlockItem,
     imRenderBlogLangBlogpost,
     newBlogLangRenderOptions
-} from "im-js/im-ui/components/im-blog-lang-viewer";
+} from "im-blog-lang-viewer";
 import * as tsc from "minimal-tsc";
 import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";
