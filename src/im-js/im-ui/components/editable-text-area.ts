@@ -1,5 +1,5 @@
-import { imdom, im, ImCache, el } from "im-js";
-import { setInputValue, BLOCK, cssVars, FIT_CONTENT, imui, INLINE, PERCENT } from "im-js/im-ui";
+import { el, ev, im, ImCache, imdom } from "im-js";
+import { BLOCK, cssVars, FIT_CONTENT, imui, INLINE, PERCENT, setInputValue } from "im-js/im-ui";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);
@@ -58,6 +58,40 @@ export type TextAreaArgs = {
     version?: number; // use this to manually trigger a re-sync
 };
 
+export type SimpleTextAreaEvent = {
+    newText?: string;
+    submit?:  boolean;
+    cancel?:  boolean;
+    blur?:    boolean;
+}
+
+
+export function imHandleTextAreaEvent(c: ImCache, textArea: HTMLTextAreaElement): SimpleTextAreaEvent | undefined {
+    let result: SimpleTextAreaEvent | undefined;
+
+
+    const input = imdom.On(c, ev.INPUT);
+    if (!result && input) {
+	// @ts-expect-error ts dumb, me very smart. [x] fact checked
+	const text: string = input.target.value;
+	result = { newText: text };
+    }
+
+    const blur = imdom.On(c, ev.BLUR);
+    if (blur) {
+	result = { blur: true };
+    }
+
+    const keyboardEvent = imdom.On(c, ev.KEYDOWN);
+    if (keyboardEvent) {
+        if (doExtraTextAreaInputHandling(keyboardEvent, textArea, defaultEditableTextAreaConfig)) {
+            result = { newText: textArea.value };
+        }
+    }
+
+    return result;
+}
+
 // My best attempt at making a text input with the layout semantics of a div.
 // NOTE: this text area has a tonne of minor things wrong with it. we should fix them at some point.
 //   - When I have a lot of empty newlines, and then click off, the empty lines go away 'as needed' 
@@ -76,7 +110,7 @@ export function imTextAreaBegin(c: ImCache, {
             imdom.setStyle(c, "height",    "100%");
             imdom.setStyle(c, "overflowY", "auto");
             imdom.setClass(c, cnTextAreaRoot);
-            imdom.setStyleProperty(c, "--focusColor", cssVars.mg);
+            imdom.setStyleProperty(c, "--focusColor", cssVars.bg2);
         }
 
         // This is now always present.
@@ -165,6 +199,11 @@ export function imTextAreaEnd(c: ImCache) {
 export type EditableTextAreaConfig = {
     useSpacesInsteadOfTabs?: boolean;
     tabStopSize?: number;
+};
+
+export const defaultEditableTextAreaConfig: EditableTextAreaConfig = {
+    useSpacesInsteadOfTabs: false,
+    tabStopSize:            4,
 };
 
 // Use this in a text area's "keydown" event handler
