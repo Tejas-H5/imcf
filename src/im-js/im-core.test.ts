@@ -569,3 +569,53 @@ test.group("im.onImmediateModeBlockDestroyed", [] , () => {
         ]);
     });
 });
+
+test.group("Conditional rendering - remove signal", [] , () => {
+    // If nothing is rendered to an entry list, that's the signal to remove that entry list.
+    // It's a mistake to think that if the index moved, then the entries were not observed -
+    // im.KeyedBegin, and im.IsFirstRender both mutate the entry list without incrementing the index.
+
+    test.add("im.KeyedBegin needs to count as a rendered thing", r => {
+        const c = im.newCache();
+
+        const messages: string[] = [];
+
+        for (let i = 0; i < 2; i++) {
+            im.CacheBegin(c); {
+                if (im.If(c)) {
+                    im.KeyedBegin(c, 0); {
+                        if (im.Memo(c)) {
+                            messages.push("iteration " + i);
+                        }
+                    } im.KeyedEnd(c);
+                } im.IfEnd(c);
+            } im.CacheEnd(c);
+        }
+
+        test.checkEqual(r, messages.length, 1);
+    });
+
+    test.add("im.IsFirstRender needs to count as a rendered thing", r => {
+        const c = im.newCache();
+
+        const messages: string[] = [];
+
+        for (let i = 0; i < 2; i++) {
+            im.CacheBegin(c); {
+                if (im.If(c)) {
+                    if (im.IsFirstRender(c)) {
+                        // Technically if you dont have any other immediate-mode state accesses within a branch,
+                        // we've got no clue if that branch has been taken lol.
+                    }
+
+                    const entries = im.getCurrentCacheEntries(c);
+                    if (im.getEntriesIsInConditionalPathway(entries)) {
+                        messages.push("started");
+                    }
+                } im.IfEnd(c);
+            } im.CacheEnd(c);
+        }
+
+        test.checkEqual(r, messages.length, 2);
+    });
+});
