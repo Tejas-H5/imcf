@@ -3,6 +3,7 @@
 We'll implement a simple TODO list.
 Along the way, we will learn how the framework works, and how to use it.
 You'll need to at least skim over this tutorial to get how the framework works.
+But luckily, it's the only one you actually _need_ - the rest are optional extras.
 
 ## Part 0 - getting started
 

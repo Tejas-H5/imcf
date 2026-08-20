@@ -580,7 +580,22 @@ function imRowEnd(c: ImCache) {
 }
 ```
 
-Cool - we implemented dragging, but now we need to implement dropping. 
+Cool - we implemented dragging.
+It was pretty easy, wasn't it?
+
+A common bug with a lot of drag implementations in other frameworks is listening to 
+    a mouse release event on the same component you listened to the mouse press event for. 
+If you release the mouse while outside that component, the drag remains stuck!
+    You'll need to subscribe to the global event handlers (Claude opus 5 made this 
+mistake, believe it or not).
+You need to subscribe to the document's mouse release event instead.
+Don't forget about the `window.blur` event either, so that alt-tabbing between windows
+    or tabs doesn't cause a drag to get stuck.
+When you're using the global event system, there are no event handlers to worry about 
+    adding/removing at precise moments. 
+This is why immediate-mode code is so much easier to write.
+
+Now we need to implement dropping. 
 What I now know after having implemented it, is that it is a lot harder.
 Here's how I ended up doing it:
 
@@ -793,18 +808,16 @@ To summarize:
     But here, we don't care about where the state comes from, so it's business as usual.
 - We check `!mouse.leftMouseButton && currentDraggedItem` to know if the item
     can be dropped. 
-    In other frameworks, this is where you pause, and reach for css, but 
-    we were actually able to extract this out, and plug it directly into styling logic.
-    There are no event handlers to worry about adding/removing at precise moments.
-    This is why immediate-mode code is so much easier to write.
+    In other frameworks, this is where you pause and reach for css. 
+    We, on the other hand, were actually able to extract this out and plug 
+        it directly into styling logic.
 ]
 
 But actually, I want to be able to reorder tasks within the same column.
 It's actually pretty simple - we just need to do the drop check 
 on a per-element basis and then `splice` the item into the right position.
-Right? 
 
-```ts - Dropping, but more precise (not working) #diff[-1]
+```ts - Dropping, but more precise #diff[-1]
 function newKanbanColumn(name: string): KanbanColumn {
     return { name: name, tasks: [] };
 }
@@ -1091,6 +1104,24 @@ imCard(c, task);
 Rather than tracking the drop index, we can simply track the task that we should insert it
     before, which is what the code does now.
 
+As you've noticed, the animation loop is a double-edged sword:
+
+```ts
+            // It's important this drop-feedback divider UI
+            // is within the same DOM node as the one where we're querying
+            // the mouse being over - otherwise, the divider can push the UI down,
+            // which moves the row out of the mouse, which hides the divider,
+            // causing an infinite loop.
+            if (im.If(c) && canDrop) {
+                droppingTask = true;
+                dropTaskBefore = task;
+                imDivider(c);
+            } im.IfEnd(c);
+```
+
+It's easy enough to debug and fix, but it won't be a problem in other frameworks.
+I think the tradeoff is worth it.
+
 ## Animating the positions of task cards
 
 Let's animate the position of these cards. 
@@ -1104,7 +1135,7 @@ There's a bit of a chicken and egg problem now - if we are breaking our animatin
 So the target node should copy the size of the animating node, whereas
     the animating node should copy the position of the target node.
 
-```ts - Animating insertion #diff[-3]
+```ts - Animating insertion #diff[-4]
 function newKanbanColumn(name: string): KanbanColumn {
     return { name: name, tasks: [] };
 }
@@ -2469,6 +2500,11 @@ Here are all the outstanding tasks:
     to implement that #url[framerate independent, https://www.youtube.com/watch?v=LSNQuFEDOyQ]
     lerp.
 - Escape button doesn't cancel the drag operation yet
+- Removing tasks, and exit animations
+    #list[
+    - Not so straightforward - if the item is not in state, how will you be able to 
+        animate it's removal??
+    ]
 ]
 
 There's even more features that can be added:

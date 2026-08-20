@@ -1,9 +1,10 @@
 # imJS - Overview
 
-`imJS` is an immediate-mode UI framework that rerenders your UI at your monitor's refresh-rate
-    with `requestAnimationFrame`!
+`imJS` is an immediate-mode UI framework that rerenders your UI at your monitor's 
+    refresh-rate with `requestAnimationFrame`!
 Surprisingly, it works.
-It's a bit overkill for a documentation page like this one, but I'm using it anyway.
+It's a bit overkill for a documentation page like this one, but I'm somewhat obliged
+    to use it here anyway, aren't I?
 As far as I know, this is a 'new' approach specifically in the web word.
 Or at least, most other web frameworks that have become widely used in industry
 #url[don't work like this., https://youtu.be/0C-y59betmY]
@@ -15,50 +16,34 @@ Or at least, most other web frameworks that have become widely used in industry
 
 ## Why make another JavaScript UI framework?
 
-I decided to start working on my own framework for a few reasons:
-
+I have found state management to be a total pain in most web frameworks.
+It seems like a small problem, but I think it's _the_ fundamental problem that underpins
+    all of frontend.
+I have yet to see a framework that:
 #list[
-- I have found state management to be a total pain in most web frameworks:
-    #list[
-    -   For state in third-party libraries, you need to subscribe to all the right events 
-            to notify your app of state changes. 
-        It's very easy to miss a callback, and render stale data.
-    -   There are also other kinds of 'state' that are more intangible, like `Date.now()`. 
-        Writing a clock component that ticks correctly every second, for example, is actually 
-            not as straightforward as I'd like it to be.
-    -   I also find the idea of a 'state management framework' silly in-and-of itself. 
-        Directly mutating your data in a predictable manner is simpler and typically more performant.
-        The fact that there are tens of different libraries for something I can already do just fine with plain 
-        JavaScript, feels like a massive design fault.
-    ]
-    Polling all state at the monitor's refresh rate will allow UI elements to observe any state
-        from anywhere, especially but not limited to `Date.now()`.
--   I did not like the reliance on third-party libraries that the framework (possibly intentionally)
-        nudged me towards in order to get anything done.
-    Writing custom things in such a way that they work nicely inside React, for example, is far more
-        of a pain than just writing custom things in the simplest way possble.
-- I did not like the fact that in order to create a list component, frameworks like React
-    would force me extract out a new component, just so I could use hooks in that component
+- Allows state to be stored as locally to a piece of UI/DOM as required
+- Allows state to be easily moved closer into a UI as needed
+- Allows state to be easily hoisted higher, even made global, as needed
+- Allows for trivial integration with state inside third-party libraries
+- Allows all intangible state, like the current date/time, to be  
+    'observed' simply and adequately by all UI that might need it
 ]
 
-If you could not tell, most of my experiences are from React, but I'll give it credit where it
-    is due.
-Before react functional components, the web didn't have any other ways to create 
-    composable, reusable components in such a simple way.
-In fact, they have influenced a lot of my design decisions in this framework.
+It's a difficult problem to solve in a conventional way. 
+Rather than solve it, JavaScript has gotten fast enough that it's actually possible 
+    to completely ignore it altogether.
+By rerendering your component at the Monitor's refresh rate, you have actually 
+    solved state managemnt completely.
+We no longer need a custom event lifecycle that notifies the framework
+    of when it's state changes. 
+Rather, all state can live in whatever objects/datastructures/variables we want,
+    and we read it from wherever we think is most appropraite for it to be.
 
-## What does the usage code look like?
+## What does it look like?
 
-The usage code reads a lot like if a React functional component were imperatively rendered.
+The code reads a lot like if a React functional component were imperatively rendered.
 The render method will always be _synchronous_ (non-`async`), and it will rerender the entire UI from
-    top to bottom in a single pass.
-This makes it easier for UI components to coordinate with one-another, and also gives
-    us the benefit of being able to look at the callstack when breakpointed to see which 
-    component a particular component rendered inside of all the way up to the entrypoint, 
-    and even makes the profiler output a lot friendlier, so much so that I won't ever 
-    need to make an `imJS` dev tools.
-
-You will also need to make good use code blocks, and put related constructs onto the same line where appropriate:
+    top to bottom in a single pass:
 
 ```ts - TODO List
 
@@ -123,19 +108,35 @@ function imTodoList(c: ImCache) {
 
 ```
 
-Looks pretty verbose. Such is the cost of not using JSX, as well as using namespace objects.
-But you will notice that it is all `TypeScript`/`JavaScript`!
-And, there isn't a single closure in sight. 
+I have found a lot of other benefits fall out of the usage code being way that it is:
 
-Creating abstractions, then, is (almost) the same as extracting common/repeating
-    logic into their own functions.
-The `c: ImCache` immediate-mode cache variable is actually doing a lot of heavy lifting here - 
-    this is where all the state lives.
-It's what allows the callsites that created DOM nodes on the first render to reuse them
-    on subsequent renders!
-The mechanism works a lot like React hooks (I think) - not because I compared the source
-    code, but because restrictions very similar to the 'rule of hooks' have arisen
-    independently in this framework as well - but I think it's worth it.
+#list[
+- Extracting reuseable components/logic is the exact same as extracting out functions
+- It is much easer to colocate the vast majority of styling logic directly in the code itself
+- list elements can be created inline, without needing to extract out a separate component
+- UI can coordinate with each other accross the entire app in a deterministic manner via global
+    or global-ish state objects
+- Bespoke interactions/animations/UI become a lot easier and lower-friction to introduce.
+    Whare the thought process was previously "that idea is too insane to implement
+    and adds too much architectural overhead let's not bother" to
+    "We're already in an animation loop, let's make use of it :D"
+- The render pass can be breakpointed and stepped through
+- Hitting a breakpoint and inspecting the callstack will showed you where in the 
+    component heirarchy you are
+- The browser's profiler output will actually be useful
+]
+
+It's not all sunshine and rainbows:
+
+#list[
+- The unique way I (ab)use code blocks and placing multiple statements on the same
+    line for cooler looking code means that I can't use `Prettier` like usual.
+    I just use the default `TypeScript` one, as that doesn't mess with newlines.
+- If you're used to JSX, it will be a pain to type out at first. 
+- Conditional rendering/control flow of any kind must adhere to certain 
+    simple and easy to remember yet unusual rules (explained more in 
+    #url[Tutorial 1, /?test=Tutorial+1+-+a+TODO+List])
+]
 
 If you don't have motion sickness, tap the example below to un-pause it.
 It shows off most of the functionality of this framework - state management, 
@@ -321,3 +322,10 @@ Here's how you #url[get set up, /?test=How+to+install+imJS].
 I've also got tutorials on the page!
 You can see all the pages by mousing over the strange rectangle thing
 hovering on the center-left.
+
+## Production usage
+
+Other than all the stuff I make for myself (mostly unremarkable and unknown stuff for now),
+    there are no production users. 
+We are venturing off the beaten path.
+Raise issues on #url[this GitHub repository, https://github.com/Tejas-H5/imjs] as needed.
