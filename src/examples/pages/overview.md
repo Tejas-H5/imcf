@@ -45,70 +45,47 @@ The code reads a lot like if a React functional component were imperatively rend
 The render method will always be _synchronous_ (non-`async`), and it will rerender the entire UI from
     top to bottom in a single pass:
 
-```ts - TODO List
+```ts - The time
 
-function imTodoList(c: ImCache) {
+import { im, imdom, el, ImCache } from "im-js";
+
+// You would put this in your entry point, but I've commented
+// this out for this example runner.
+// imdom.startAnimationLoop(document.body, imMain);
+
+function formatTime(now: Date) {
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    return `${hours}:${minutes}:${seconds}`;
+}
+
+function imMain(c: ImCache) {
+    const now = new Date();
+
     imdom.ElBegin(c, el.DIV); {
-        if (im.IsFirstRender(c)) {
-            imdom.setStyle(c, "width", "100%");
-        }
-
-        const state = im.GetInline(c, imTodoList) ??
-            im.Set(c, { items: [] });
-
-        imdom.ElBegin(c, el.H3); {
-            if (im.If(c) && state.items.length > 0) {
-                imdom.Str(c, state.items.length === 1 ? 
-                    "You have one thing to do" : state.items.length < 20 ?
-                    `You have ${state.items.length} things to do!` : 
-                    ``
-                );
+        imdom.ElBegin(c, el.DIV); {
+            const hours = now.getHours();
+            if (im.If(c) && now.getHours() < 12) {
+                imdom.Str(c, "Good morning!");
+            } else if (im.ElseIf(c) && now.getHours() < 6) {
+                imdom.Str(c, "Good afternoon!");
             } else {
                 im.Else(c);
-                imdom.Str(c, "You have completed all your tasks! nice.");
+                imdom.Str(c, "Good evening!");
             } im.IfEnd(c);
-        } imdom.ElEnd(c, el.H3);
-
-        im.For(c); for (const item of state.items) {
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, item);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
+        } imdom.ElEnd(c, el.DIV);
         imdom.ElBegin(c, el.DIV); {
-            let submit = false;
-
-            const input = imdom.ElBegin(c, el.INPUT); {
-                const keyEv = imdom.On(c, ev.KEYDOWN);
-                if (keyEv) {
-                    if (keyEv.key === "Enter") {
-                        submit = true;
-                    }
-                }
-            } imdom.ElEnd(c, el.INPUT);
-
-            imdom.ElBegin(c, el.BUTTON); {
-                imdom.Str(c, "+");
-                const clickEv = imdom.On(c, ev.MOUSEDOWN);
-                if (clickEv) {
-                    submit = true;
-                }
-            } imdom.ElEnd(c, el.BUTTON);
-
-            if (submit) {
-                if (input.root.value) {
-                    state.items.push(input.root.value);
-                    input.root.value = "";
-                    setTimeout(() => { input.root.focus() }, 1) ; 
-                }
-            }
+            imdom.Str(c, "The time is ")
+            imdom.StrFmt(c, now, formatTime);
         } imdom.ElEnd(c, el.DIV);
     } imdom.ElEnd(c, el.DIV);
 }
 
 ```
 
-I have found a lot of other benefits fall out of the usage code being way that it is:
+I have found that a lot of other benefits fall out of the usage code being way that it is:
 
 #list[
 - Extracting reuseable components/logic is the exact same as extracting out functions

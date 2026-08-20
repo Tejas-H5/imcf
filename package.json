@@ -2,6 +2,7 @@
   "name": "im-js",
   "private": false,
   "version": "0.0.9",
+  "author": "Tejas-H5",
   "description": "An immediate-mode UI framework",
   "type": "module",
   "scripts": {
@@ -9,6 +10,16 @@
     "build": "node ./build/build.ts build",
     "test": "node ./build/test.ts"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tejas-H5/imjs.git"
+  },
+  "keywords": [
+    "im-js",
+    "immediate mode",
+    "immediate mode UI"
+  ],
+  "licence": "MIT",
   "devDependencies": {
     "@types/node": "^25.3.2",
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
