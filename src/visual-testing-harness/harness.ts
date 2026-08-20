@@ -388,7 +388,10 @@ function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown)
     const el             = imdom.getElement(c);
     const rootClientRect = el.getBoundingClientRect();
 
-    imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, rightUnit, 0, PX, 0, leftUnit); imui.Justify(c); imui.ScrollOverflow(c); {
+    imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, rightUnit, 0, PX, 0, leftUnit); imui.Justify(c); {
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflowY", "auto");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflowX", "hidden");
+
         if (im.Memo(c, sidebar.sideBarOpen01) | im.Memo(c, rootClientRect.width)) {
             imdom.setStyle(c, "fontSize", (1 * sidebar.sideBarOpen01) + "em");
             imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * rootClientRect.width, 5000, sidebar.sideBarOpen01) + "px");
