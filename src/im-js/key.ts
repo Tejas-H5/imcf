@@ -39,7 +39,7 @@ export const KEY = {
     J: getNormalizedKey("J"),
     K: getNormalizedKey("K"),
     L: getNormalizedKey("L"),
-    SEMICOLON: getNormalizedKey(","),
+    SEMICOLON: getNormalizedKey(";"),
     QUOTE: getNormalizedKey("'"),
     ENTER: getNormalizedKey("Enter"),
 
@@ -52,18 +52,70 @@ export const KEY = {
     M: getNormalizedKey("M"),
     COMMA: getNormalizedKey(","),
     PERIOD: getNormalizedKey("."),
-    FORWAR_SLASH: getNormalizedKey("/"),
+    FORWARD_SLASH: getNormalizedKey("/"),
 
+    // Modifiers & Navigation
     SHIFT: getNormalizedKey("Shift"),
     CTRL: getNormalizedKey("Control"),
     META: getNormalizedKey("Meta"),
     ALT: getNormalizedKey("Alt"),
-    MOD: getNormalizedKey("Modifier"), // Either CTRL or META
+    TAB: getNormalizedKey("Tab"),
+    MOD: getNormalizedKey("Modifier"), 
 
     SPACE: getNormalizedKey(" "),
+    DELETE: getNormalizedKey("Delete"),
+    INSERT: getNormalizedKey("Insert"),
+    PAGE_UP: getNormalizedKey("PageUp"),
+    PAGE_DOWN: getNormalizedKey("PageDown"), // Added
+    HOME: getNormalizedKey("Home"), // Added
+    END: getNormalizedKey("End"), // Added
     BACKSPACE: getNormalizedKey("Backspace"),
     ARROW_UP: getNormalizedKey("ArrowUp"),
     ARROW_DOWN: getNormalizedKey("ArrowDown"),
     ARROW_LEFT: getNormalizedKey("ArrowLeft"),
     ARROW_RIGHT: getNormalizedKey("ArrowRight"),
+
+    // Function keys
+    F1: getNormalizedKey("F1"),
+    F2: getNormalizedKey("F2"),
+    F3: getNormalizedKey("F3"),
+    F4: getNormalizedKey("F4"),
+    F5: getNormalizedKey("F5"),
+    F6: getNormalizedKey("F6"),
+    F7: getNormalizedKey("F7"),
+    F8: getNormalizedKey("F8"),
+    F9: getNormalizedKey("F9"),
+    F10: getNormalizedKey("F10"),
+    F11: getNormalizedKey("F11"),
+    F12: getNormalizedKey("F12"),
+
+    // System keys
+    ESCAPE: getNormalizedKey("Escape"),
+    CAPS_LOCK: getNormalizedKey("CapsLock"),
+    SCROLL_LOCK: getNormalizedKey("ScrollLock"),
+    NUM_LOCK: getNormalizedKey("NumLock"),
+    PRINT_SCREEN: getNormalizedKey("PrintScreen"),
+    PAUSE: getNormalizedKey("Pause"),
+    CONTEXT_MENU: getNormalizedKey("ContextMenu"),
+
+    // Numpad
+    NUMPAD_0: getNormalizedKey("0"),
+    NUMPAD_1: getNormalizedKey("1"),
+    NUMPAD_2: getNormalizedKey("2"),
+    NUMPAD_3: getNormalizedKey("3"),
+    NUMPAD_4: getNormalizedKey("4"),
+    NUMPAD_5: getNormalizedKey("5"),
+    NUMPAD_6: getNormalizedKey("6"),
+    NUMPAD_7: getNormalizedKey("7"),
+    NUMPAD_8: getNormalizedKey("8"),
+    NUMPAD_9: getNormalizedKey("9"),
+    NUMPAD_DECIMAL: getNormalizedKey("."),
+    NUMPAD_DIVIDE: getNormalizedKey("/"),
+    NUMPAD_MULTIPLY: getNormalizedKey("*"),
+    NUMPAD_SUBTRACT: getNormalizedKey("-"),
+    NUMPAD_ADD: getNormalizedKey("+"),
+    NUMPAD_ENTER: getNormalizedKey("Enter"),
+
+    // Additional common punctuation symbols
+    BACKTICK: getNormalizedKey("`"),
 } as const;

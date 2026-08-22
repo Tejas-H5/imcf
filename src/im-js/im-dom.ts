@@ -597,6 +597,11 @@ function hasMouseClick(c: ImCache, el = getCurrentElement(c)): boolean {
     return elIsInSetThisFrame(el, mouse.mouseClickElements)
 }
 
+function hasMouseDoubleClick(c: ImCache, el = getCurrentElement(c)): boolean {
+    const mouse = getMouse();
+    return elIsInSetThisFrame(el, mouse.mouseDoubleClickElements)
+}
+
 function hasMouseOver(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return mouse.mouseOverElements.has(el);
@@ -648,6 +653,7 @@ export type MouseState = {
     mouseDownElements: Set<ValidElement>;
     mouseUpElements: Set<ValidElement>;
     mouseClickElements: Set<ValidElement>;
+    mouseDoubleClickElements: Set<ValidElement>;
     mouseOverElements: Set<ValidElement>;
     lastMouseOverElement: ValidElement | null;
 };
@@ -665,6 +671,7 @@ export type GlobalEventSystem = {
         mouseenter: (e: MouseEvent) => void;
         mouseup:    (e: MouseEvent) => void;
         mouseclick: (e: MouseEvent) => void;
+        mousedblclick: (e: MouseEvent) => void;
         wheel:      (e: WheelEvent) => void;
         keydown:    (e: KeyboardEvent) => void;
         keyup:      (e: KeyboardEvent) => void;
@@ -678,7 +685,7 @@ function isEventRerender(): boolean {
     return globalEventSystem.isRerendering;
 }
 
-function findParents(el: ValidElement, elements: Set<ValidElement>) {
+function findAndAddParentsToSet(el: ValidElement, elements: Set<ValidElement>) {
     elements.clear();
     let current: ValidElement | null = el;
     while (current !== null) {
@@ -715,6 +722,7 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
         mouseDownElements: new Set<ValidElement>(),
         mouseUpElements: new Set<ValidElement>(),
         mouseClickElements: new Set<ValidElement>(),
+        mouseDoubleClickElements: new Set<ValidElement>(),
         mouseOverElements: new Set<ValidElement>(),
         lastMouseOverElement: null,
     };
@@ -732,7 +740,7 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
 
         if (mouse.lastMouseOverElement !== e.target) {
             mouse.lastMouseOverElement = e.target as ValidElement;
-            findParents(e.target as ValidElement, mouse.mouseOverElements);
+            findAndAddParentsToSet(e.target as ValidElement, mouse.mouseOverElements);
             return true;
         }
 
@@ -765,7 +773,7 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
             mousedown: (e: MouseEvent) => {
                 updateMouseButtons(e);
 
-                findParents(e.target as ValidElement, mouse.mouseDownElements);
+                findAndAddParentsToSet(e.target as ValidElement, mouse.mouseDownElements);
                 try {
                     mouse.ev = e;
                     eventSystem.rerender();
@@ -775,12 +783,22 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
                 }
             },
             mouseclick: (e) => {
-                findParents(e.target as ValidElement, mouse.mouseClickElements);
+                findAndAddParentsToSet(e.target as ValidElement, mouse.mouseClickElements);
                 try {
                     mouse.ev = e;
                     eventSystem.rerender();
                 } finally {
                     mouse.mouseClickElements.clear();
+                    mouse.ev = null;
+                }
+            },
+            mousedblclick: (e) => {
+                findAndAddParentsToSet(e.target as ValidElement, mouse.mouseDoubleClickElements);
+                try {
+                    mouse.ev = e;
+                    eventSystem.rerender();
+                } finally {
+                    mouse.mouseDoubleClickElements.clear();
                     mouse.ev = null;
                 }
             },
@@ -801,7 +819,7 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
             mouseup: (e: MouseEvent) => {
                 updateMouseButtons(e);
 
-                findParents(e.target as ValidElement, mouse.mouseUpElements);
+                findAndAddParentsToSet(e.target as ValidElement, mouse.mouseUpElements);
                 try {
                     mouse.ev = e;
                     eventSystem.rerender();
@@ -1023,6 +1041,7 @@ function adddocAndWindowEventListeners(eventSystem: GlobalEventSystem) {
     doc.addEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
     doc.addEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
     doc.addEventListener("click", eventSystem.globalEventHandlers.mouseclick);
+    doc.addEventListener("dblclick", eventSystem.globalEventHandlers.mousedblclick);
     doc.addEventListener("wheel", eventSystem.globalEventHandlers.wheel);
     doc.addEventListener("keydown", eventSystem.globalEventHandlers.keydown);
     doc.addEventListener("keyup", eventSystem.globalEventHandlers.keyup);
@@ -1035,6 +1054,7 @@ function removedocAndWindowEventListeners(eventSystem: GlobalEventSystem) {
     doc.removeEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
     doc.removeEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
     doc.removeEventListener("click", eventSystem.globalEventHandlers.mouseclick);
+    doc.addEventListener("dblclick", eventSystem.globalEventHandlers.mousedblclick);
     doc.removeEventListener("wheel", eventSystem.globalEventHandlers.wheel);
     doc.removeEventListener("keydown", eventSystem.globalEventHandlers.keydown);
     doc.removeEventListener("keyup", eventSystem.globalEventHandlers.keyup);
@@ -1467,6 +1487,7 @@ export const imdom = {
     hasMousePress,
     hasMouseUp,
     hasMouseClick,
+    hasMouseDoubleClick,
     hasMouseOver,
     isKeyPressed, isKeyRepeated, isKeyPressedOrRepeated, isKeyReleased, isKeyHeld,
     isLetterPressed, isLetterRepeated, isLetterPressedOrRepeated, isLetterReleased, isLetterHeld,
