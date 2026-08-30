@@ -13,13 +13,13 @@ There are a lot of ways to do this - if you don't know how, I'd suggest
     initializing a vanilla TypeScript project with #url[Vite, https://vite.dev/guide/#scaffolding-your-first-vite-project],
     and then deleting most of the assets to get to a blank page.
 
-#url[Install the framework, /?test=How+to+install+imJS] if you 
+#url[Install the framework, /?test=How+to+install+imLayer] if you 
     haven't already.
 
 To get started, you'll need to paste this into your entrypoint:
 
 ```typescript
-import { ImCache, im, imdom } from "im-js";
+import { ImCache, im, imdom } from "im-layer";
 
 imdom.startAnimationLoop(document.body, imMain);
 
@@ -40,7 +40,7 @@ Since `requestAnimationFrame` is actually DOM-related, I've put the animation lo
 Let's get some TODO items drawing:
 
 ```ts - Basic skeleton
-import { ImCache, im, imdom, el } from "im-js";
+import { ImCache, im, imdom, el } from "im-layer";
 
 // Storing everything in global state for now. 
 const items = [
@@ -68,7 +68,7 @@ function imTodoList(c: ImCache) {
 Nice! The next thing I want to implement, is adding more items:
 
 ```ts - Basic skeleton - adding items - attempt one #diff[-1] #id[before_tangent]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     "item 1",
@@ -226,7 +226,7 @@ This is exactly what we achieve with the `im.For` / `im.ForEnd` control-flow ann
 Let's try adding multiple items again:
 
 ```ts - Basic skeleton - adding more items - working #diff[before_tangent] #id[after_tangent]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     "item 1",
@@ -458,7 +458,7 @@ To make sure that they're actually updating, let's render
     in realtime.
 
 ```ts - Basic skeleton - adding more items - editing #diff[after_tangent]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     "item 1",
@@ -519,7 +519,7 @@ Let's try adding a way to move things around.
 We'll probably want to make our button component reuseable:
 
 ```ts - Basic skeleton - moving around, attempt 1 #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     "item 1",
@@ -604,7 +604,7 @@ It's probably the `im.IsFirstRender` thing that makes the text input
 Let's just drop that:
 
 ```ts - Basic skeleton - still not working #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     "item 1",
@@ -687,7 +687,7 @@ We need to only update the input's text when the item's text has actually change
 We can use `im.Memo` for this:
 
 ```ts - Basic skeleton - 'working'! #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [ "item 1", "item 2", "item 3" ];
 
@@ -773,7 +773,7 @@ a task or not. We need to make a couple changes:
 
 
 ```ts - Basic skeleton - let's add some checkboxes to toggle a DONE state #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 function newTodoListItem(name: string) {
     return {
@@ -895,7 +895,7 @@ Pretty cool! I'm sure other people (including myself) have had
 Not the case here - we're already in an animation loop, so let's just implement it:
 
 ```ts - Basic skeleton - drag + toggle checkboxes #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     newTodoListItem("item 1"),
@@ -1039,7 +1039,7 @@ I think we've been putting it off long enough - let's extract out the list item,
 so that it's easier to work with:
 
 ```ts - Basic skeleton - code cleanup #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     newTodoListItem("item 1"),
@@ -1190,7 +1190,7 @@ We can do much better, with something called 'keyed' rendering.
 If you have used any other web framework at all, you already know what this is:
 
 ```ts - Basic skeleton - Keyed rendering #diff[-1]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     newTodoListItem("item 1"),
@@ -1392,7 +1392,7 @@ I've found that the simplest and most controlable way to defer this mutation,
 We should just do this for all mutations on the state we're rendering:
 
 ```ts - Basic skeleton - Keyed rendering, and moving works #diff[-4]
-import { ImCache, im, imdom, el, ev } from "im-js";
+import { ImCache, im, imdom, el, ev } from "im-layer";
 
 const items = [
     newTodoListItem("item 1"),
@@ -1539,7 +1539,7 @@ function imButtonIsClicked(c: ImCache, text: string): boolean {
 
 Congrats! You've built a todo list where you can edit the items, mark them as done/undone,
 and re-prioritise the items. 
-It doesn't look particularly nice - this was an imJS tutorial, not a UI design one. 
+It doesn't look particularly nice - this was an imLayer tutorial, not a UI design one. 
 
 You've also learned exactly how the framework works, and how to use almost every feature.
 You can probably start building stuff now! 

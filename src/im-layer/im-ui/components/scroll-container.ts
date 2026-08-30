@@ -1,5 +1,5 @@
-import { im, ImCache } from "im-js";
-import { COL, imui, ROW } from "im-js/im-ui";
+import { im, ImCache } from "im-layer";
+import { COL, imui, ROW } from "im-layer/im-ui";
 import { getScrollVHEx } from "../dom-utils";
 
 

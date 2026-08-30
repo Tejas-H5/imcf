@@ -1,5 +1,5 @@
-import { el, ev, im, ImCache, imdom, key } from "im-js";
-import { COL, cssVars, imui, PX } from "im-js/im-ui";
+import { el, ev, im, ImCache, imdom, key } from "im-layer";
+import { COL, cssVars, imui, PX } from "im-layer/im-ui";
 import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visual-testing-harness";
 
 import page0 from "./pages/overview.md";

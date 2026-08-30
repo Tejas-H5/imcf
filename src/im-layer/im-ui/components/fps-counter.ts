@@ -1,5 +1,5 @@
-import { imdom, im, ImCache } from "im-js";
-import { BLOCK, imui, } from "im-js/im-ui";
+import { imdom, im, ImCache } from "im-layer";
+import { BLOCK, imui, } from "im-layer/im-ui";
 
 export type FpsCounterState = {
     renderStart: number;

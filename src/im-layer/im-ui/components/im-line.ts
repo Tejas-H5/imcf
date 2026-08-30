@@ -1,5 +1,5 @@
-import { BLOCK, NA, PERCENT, PX, cssVars, imui } from "im-js/im-ui";
-import { imdom, im, ImCache } from "im-js";
+import { BLOCK, NA, PERCENT, PX, cssVars, imui } from "im-layer/im-ui";
+import { imdom, im, ImCache } from "im-layer";
 
 // Surprisingly useful. That being said, I have been informed that using lines to design instead of spacing is usally a bad idea
 

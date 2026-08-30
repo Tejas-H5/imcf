@@ -2,14 +2,23 @@
 
 [![Test, build, deploy](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
 
-`imJS` is an immediate-mode UI framework that rerenders your UI at your monitor's refresh-rate
+`imLayer` sits between the DOM and your code to rerender your UI at your monitor's refresh-rate
     with `requestAnimationFrame`!
-Surprisingly, it works.
+
+```
+[ user code              ]
+[ immediate-mode layer   ] <-- This 'framework'
+[ Retained-mode core     ] <-- I've included a layer for DOM as part of the core framework.
+                               But in theory, the core-framework could be used to wrap any 
+                               tree-like retained-mode API.
+```
+
+Surprisingly, it works, and it's simpler than you might think.
 The page linked above explains the framework in detail, along with how it works 
     and provides a couple of tutorials for how to use it.
 
 ```ts
-import { im, imdom, el, ImCache } from "im-js";
+import { im, imdom, el, ImCache } from "im-layer";
 
 imdom.startAnimationLoop(document.body, imMain);
 

@@ -2,7 +2,7 @@
 
 import { assert } from "assert";
 import * as bl from "blog-lang";
-import { el, elsvg, im, ImCache, imdom } from "im-js";
+import { el, elsvg, im, ImCache, imdom } from "im-layer";
 import {
 	BLOCK,
 	CENTER,
@@ -14,8 +14,8 @@ import {
 	LEFT,
 	PX,
 	VH
-} from "im-js/im-ui";
-import { imButtonStyle } from "im-js/im-ui/components/im-button";
+} from "im-layer/im-ui";
+import { imButtonStyle } from "im-layer/im-ui/components/im-button";
 import { imCodeViewer } from "im-code-viewer";
 
 export type MarkupRendererState = {

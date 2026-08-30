@@ -1,9 +1,9 @@
 {
-  "name": "im-js",
+  "name": "im-layer",
   "private": false,
   "version": "0.0.10",
   "author": "Tejas-H5",
-  "description": "An immediate-mode UI framework",
+  "description": "An immediate-mode layer over the DOM. But in theory, over anything at all",
   "type": "module",
   "scripts": {
     "dev": "node ./build/build.ts devserver",
@@ -16,7 +16,9 @@
   },
   "keywords": [
     "im-js",
+    "immediate-mode-cache",
     "immediate mode",
+    "immediate mode layer",
     "immediate mode UI"
   ],
   "licence": "MIT",
@@ -29,20 +31,20 @@
   },
   "exports": {
     ".": {
-      "import": "./src/im-js/index.ts",
-      "types": "./src/im-js/index.ts"
+      "import": "./src/im-layer/index.ts",
+      "types": "./src/im-layer/index.ts"
     },
     "./im-ui": {
-      "import": "./src/im-js/im-ui/index.ts",
-      "types": "./src/im-js/im-ui/index.ts"
+      "import": "./src/im-layer/im-ui/index.ts",
+      "types": "./src/im-layer/im-ui/index.ts"
     },
     "./im-ui/components/*": {
-      "import": "./src/im-js/im-ui/components/*.ts",
-      "types": "./src/im-js/im-ui/components/*.ts"
+      "import": "./src/im-layer/im-ui/components/*.ts",
+      "types": "./src/im-layer/im-ui/components/*.ts"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "src/im-js"
+    "src/im-layer"
   ]
 }

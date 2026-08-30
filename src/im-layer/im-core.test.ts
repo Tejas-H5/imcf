@@ -1,4 +1,4 @@
-import { im, ImCache } from "im-js";
+import { im, ImCache } from "im-layer";
 import * as test from "testing";
 
 test.file("im-core.test.ts");

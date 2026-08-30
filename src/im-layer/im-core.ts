@@ -1282,7 +1282,7 @@ export const im = {
     KeyedBegin: imKeyedBegin, KeyedEnd: imKeyedEnd,
     If: imIf, ElseIf: imIfElse, IfElse: imIfElse, Else: imElse, IfEnd: imIfEnd,
     Switch: imSwitch, SwitchEnd: imSwitchEnd,
-    CACHED: true, NOT_CACHED: false, // im.Switch(c, key, im.CACHED);
+    CACHED: true, NOT_CACHED: false,
     For: imFor, ForEnd: imForEnd,
     Try: imTry, Catch: imCatch, TryEnd: imTryEnd, TryCatch: imCatch,
 

@@ -1,13 +1,13 @@
 import { assert } from "assert";
-import { im, ImCache, imdom, el, DomAppender } from "im-js";
-import { BLOCK, CENTER, COL, cssVars, imui, INLINE, LEFT, PX, ROW } from "im-js/im-ui";
+import { im, ImCache, imdom, el, DomAppender } from "im-layer";
+import { BLOCK, CENTER, COL, cssVars, imui, INLINE, LEFT, PX, ROW } from "im-layer/im-ui";
 import { imVisualTestInstallation, TEST_SCROLLABLE, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd, imParaBegin, imParaEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
 import { getPreviousResult, getUserAgentString, previousResults, previousResultsByUserAgent, UserAgentString } from "./prev-results";
-import { imButtonIsClicked } from "im-js/im-ui/components/button";
-import { imSliderInput } from "im-js/im-ui/components/slider";
+import { imButtonIsClicked } from "im-layer/im-ui/components/button";
+import { imSliderInput } from "im-layer/im-ui/components/slider";
 
-export function imJsPerformanceBenchmarks(c: ImCache, harness: VisualTestHarnessState) {
+export function imLayerPerformanceBenchmarks(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
         imVisualTestInstallation(c, "Benchmark Runner", harness, imBenchmarkRunner, TEST_SCROLLABLE);
 

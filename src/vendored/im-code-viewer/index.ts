@@ -1,5 +1,5 @@
-import { el, im, ImCache, imdom } from "im-js";
-import { BLOCK, cssVars, imui, INLINE } from "im-js/im-ui";
+import { el, im, ImCache, imdom } from "im-layer";
+import { BLOCK, cssVars, imui, INLINE } from "im-layer/im-ui";
 import * as ld from "line-diff";
 
 type CodeBlockState = {

@@ -1,6 +1,6 @@
 import * as bl from "blog-lang";
-import { ev, im, ImCache, ImCacheRerenderFn, imdom } from "im-js";
-import { BLOCK, imui } from "im-js/im-ui";
+import { ev, im, ImCache, ImCacheRerenderFn, imdom } from "im-layer";
+import { BLOCK, imui } from "im-layer/im-ui";
 import {
     BlogLangRenderOptions,
     imItemUrlBegin,

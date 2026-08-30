@@ -1,4 +1,15 @@
-# How to install imJS
+# How to install imLayer
+
+## Install via npm
+
+<!-- This library used to be called `im-js`. But I wanted to upload it to NPM, and -->
+<!--     someone already has that as a scope.  -->
+<!-- So I had to think for multiple weeks about how to rename the package.  -->
+<!-- As you can see from `im-js`, and now `im-layer`, I am apparently not very good at naming things.  -->
+
+This is the main way to install things.
+
+TODO: upload the package.
 
 ## Manually vendoring
 
@@ -6,13 +17,13 @@ Copy the folders you need from #url[this GitHub repository, https://github.com/T
     into your project.
 
 ```
-im-js/
+im-layer/
     <all files> (required)
         The core framework. You'll need every file here, but not necessarily the folders
 
     im-ui/      (optional)
         A minimal design system I've included for my own convenience.
-        It's optional - im-js will work without it.
+        It's optional - im-layer will work without it.
 
     tests/  (ignore)
         I put the tests here, you can ignore them.
@@ -20,27 +31,18 @@ im-js/
 <other folders>  (ignore)
 ```
 
-## npm
-
-It's not available on npm (the package registry), but you can still `npm install` it
-    directly from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]:
-
-```cmd
-npm install github:Tejas-H5/imjs --ignore-scripts
-```
-
 ## Importing stuff
 
-The main framework is everything exported from `"im-js"`:
+The main framework is everything exported from `"im-layer"`:
 
 ```typescript
-import { im, imdom, el, elsvg, ev, key } from "im-js";
+import { im, imdom, el, elsvg, ev, key } from "im-layer";
 ```
 
 I've also included `im-ui`, for my own convenience really:
 
 ```typescript
-import { imButtonPressed } from "im-js/im-ui/components/im-button";
+import { imButtonPressed } from "im-layer/im-ui/components/im-button";
 ```
 
 It's a minimal component library and design-system that I use for all my projects. 
@@ -51,7 +53,7 @@ It most-likely won't be any good for your project - it exists to draw inspiratio
 
 The code you write in this framework will abuse the hell out of semi-colons, code blocks
     and putting multiple relevant function calls on the same line in general 
-    (See the examples on #url[previous page, /?test=imJS+-+Overview]).
+    (See the examples on #url[previous page, /?test=imLayer+-+Overview]).
 Your formatter needs to be configured to not do this:
 
 #table[

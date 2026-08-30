@@ -1,7 +1,15 @@
-# imJS - Overview
+# imLayer - Overview
 
-`imJS` is an immediate-mode UI framework that rerenders your UI at your monitor's 
-    refresh-rate with `requestAnimationFrame`!
+`imLayer` sits between the DOM and your code to rerender your UI at your monitor's refresh-rate
+    with `requestAnimationFrame`!
+
+```
+[ your code                         ]
+[ immediate-mode layer              ] <-- This 'framework'
+[ Retained-mode core (e.g the DOM)  ] <-- I've included a layer for DOM as part of the core framework.
+                                          But in theory, the core-framework could be used to wrap any 
+                                          tree-like retained-mode API.
+```
 Surprisingly, it works.
 It's a bit overkill for a documentation page like this one, but I'm somewhat obliged
     to use it here anyway, aren't I?
@@ -47,7 +55,7 @@ The render method will always be _synchronous_ (non-`async`), and it will rerend
 
 ```ts - The time
 
-import { im, imdom, el, ImCache } from "im-js";
+import { im, imdom, el, ImCache } from "im-layer";
 
 // You would put this in your entry point, but I've commented
 // this out for this example runner.
@@ -112,18 +120,21 @@ It's not all sunshine and rainbows:
 - If you're used to JSX, it will be a pain to type out at first. 
 - Conditional rendering/control flow of any kind must adhere to certain 
     simple and easy to remember yet unusual rules (explained more in 
-    #url[Tutorial 1, /?test=Tutorial+1+-+a+TODO+List])
+    #url[Tutorial 1, /?test=Tutorial+1+-+a+TODO+List]). The example above
+    already contains `im.If` and `im.IfElse` - these are the things you wouldn't
+    expect an immediate-mode UI system to usually have, and they are
+    what I'm referring to here.
 ]
 
 If you don't have motion sickness, tap the example below to un-pause it.
 It shows off most of the functionality of this framework - state management, 
     conditional rendering, list rendering, and animation:
 
-```ts - you will try imjs ... you will try imj - hey dont look away
+```ts - you will try imLayer ... you will try imLa - hey dont look away
 
 // <------- You can drag this middle thing to resize it btw
 
-const subliminalMessage = "you will try imjs"
+const subliminalMessage = "you will try imLayer"
 
 function imGalaxyOfDivs(c: ImCache) {
     if (im.IsFirstRender(c)) {
@@ -294,11 +305,12 @@ If you profile this page while the example is running, you'll find that the most
     to data-manipulations done in this framework.
 
 If the code examples haven't put you off the framework by now, then great!
-Here's how you #url[get set up, /?test=How+to+install+imJS].
+Here's how you #url[get set up, /?test=How+to+install+imLayer].
 
-I've also got tutorials on the page!
-You can see all the pages by mousing over the strange rectangle thing
-hovering on the center-left.
+I've also got tutorials on the page.
+You can see all the pages by mousing over the thing on the center-left.
+You'll want to start on #url[The first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+The rest can be skipped.
 
 ## Production usage
 

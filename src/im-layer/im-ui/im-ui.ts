@@ -1,4 +1,4 @@
-import { imdom, im, ImCache, el } from "im-js";
+import { imdom, im, ImCache, el } from "im-layer";
 
 ///////////////////////////
 // CSS Builder
@@ -466,6 +466,13 @@ function imScrollOverflow(c: ImCache, vScroll = true, hScroll = false) {
     if (im.Memo(c, hScroll)) imdom.setStyle(c, "overflowX", hScroll ? "auto" : "");
 }
 
+// NOTE: Maybe this should be a default on imRelative?
+function imClip(c: ImCache) {
+    // NOTE: To fully fix absolute-positioned inputs, you'll need to make the 
+    // parent have 200% width or more.
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+}
+
 function imFixed(
     c: ImCache,
     top: number, topType: SizeUnits,
@@ -724,6 +731,7 @@ export const imui = {
     Align: imAlign, Justify: imJustify,
     Relative: imRelative, Fixed: imFixed, FixedXY: imFixedXY, Absolute: imAbsolute, AbsoluteXY: imAbsoluteXY,
     ScrollOverflow: imScrollOverflow,
+    Clip: imClip,
     ZIndex: imZIndex,
 
     // Styling logic
