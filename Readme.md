@@ -1,4 +1,6 @@
-# Immediate-Mode Javascript framework (Check it out [here](https://tejas-h5.github.io/imjs/))
+# Immediate-Mode Layer (Check it out [here](https://tejas-h5.github.io/imjs/))
+
+TODO: im-layer is a corny name. We'll keep thinking.
 
 [![Test, build, deploy](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
 

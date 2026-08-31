@@ -1,7 +1,7 @@
 {
   "name": "im-layer",
   "private": false,
-  "version": "0.0.10",
+  "version": "0.0.11",
   "author": "Tejas-H5",
   "description": "An immediate-mode layer over the DOM. But in theory, over anything at all",
   "type": "module",
@@ -15,7 +15,6 @@
     "url": "https://github.com/Tejas-H5/imjs.git"
   },
   "keywords": [
-    "im-js",
     "immediate-mode-cache",
     "immediate mode",
     "immediate mode layer",
