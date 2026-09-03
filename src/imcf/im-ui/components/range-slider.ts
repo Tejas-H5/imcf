@@ -1,5 +1,5 @@
-import { imdom, im, ImCache } from "im-layer";
-import { BLOCK, imui, cssVars } from "im-layer/im-ui";
+import { imdom, im, ImCache } from "imcf";
+import { BLOCK, imui, cssVars } from "imcf/im-ui";
 import { clamp } from "./math-utils";
 
 type RangeSliderHandle = {

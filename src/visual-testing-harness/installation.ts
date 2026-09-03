@@ -1,8 +1,8 @@
-import { el, im, ImCache, ImCacheRerenderFn, imdom } from "im-layer";
-import { BLOCK, CENTER, COL, cssVars, imui, NA, NONE, PX, ROW, STRETCH, VH } from "im-layer/im-ui";
-import { imButtonIsClicked } from "im-layer/im-ui/components/button";
+import { el, im, ImCache, ImCacheRerenderFn, imdom } from "imcf";
+import { BLOCK, CENTER, COL, cssVars, imui, NA, NONE, PX, ROW, STRETCH, VH } from "imcf/im-ui";
+import { imButtonIsClicked } from "imcf/im-ui/components/button";
 import { imCodeViewer } from "im-code-viewer";
-import { inverseLerp } from "im-layer/im-ui/components/math-utils";
+import { inverseLerp } from "imcf/im-ui/components/math-utils";
 import { VisualTestHarnessState } from "./harness";
 
 export const TEST_CENTERED = (1 << 0);

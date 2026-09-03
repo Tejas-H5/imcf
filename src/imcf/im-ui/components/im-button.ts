@@ -1,5 +1,5 @@
-import { el, im, ImCache, imdom } from "im-layer";
-import { cssVars, imui } from "im-layer/im-ui";
+import { el, im, ImCache, imdom } from "imcf";
+import { cssVars, imui } from "imcf/im-ui";
 
 const cssb = imui.newCssBuilder("button");
 

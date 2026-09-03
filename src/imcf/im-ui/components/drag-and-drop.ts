@@ -1,5 +1,5 @@
-import { imdom, im, ImCache } from "im-layer";
-import { COL, imui, cssVars } from "im-layer/im-ui";
+import { imdom, im, ImCache } from "imcf";
+import { COL, imui, cssVars } from "imcf/im-ui";
 
 export type DragAndDropState =  {
     move: { a: number; b: number; } | null;

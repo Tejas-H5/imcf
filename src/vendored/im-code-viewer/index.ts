@@ -1,11 +1,19 @@
-import { el, im, ImCache, imdom } from "im-layer";
-import { BLOCK, cssVars, imui, INLINE } from "im-layer/im-ui";
+import { el, im, ImCache, imdom } from "imcf";
+import { BLOCK, cssVars, imui, INLINE } from "imcf/im-ui";
 import * as ld from "line-diff";
 
 type CodeBlockState = {
     codeLines: string[];
     diff: ld.Block[] | undefined;
 };
+
+function codeToLines(code: string): string[] {
+    const lines = code.split("\n");
+    if (lines.length > 0 && lines[lines.length - 1] === "") {
+        lines.pop();
+    }
+    return lines;
+}
 
 // A code viewer I've made for my static websites.
 // It is designed to be very minimal, while also supporting diffs,
@@ -23,11 +31,11 @@ export function imCodeViewer(
 		} );
 
 	if (im.Memo(c, codeVersion)) {
-		s.codeLines = code.split("\n");
+		s.codeLines = codeToLines(code);
 
 		s.diff = undefined;
 		if (codeToDiffWith !== undefined) {
-			const otherCodeLines = codeToDiffWith.split("\n");
+			const otherCodeLines = codeToLines(codeToDiffWith);
 			s.diff = ld.computeLines(otherCodeLines, s.codeLines);
 		}
 	}

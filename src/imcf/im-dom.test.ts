@@ -1,6 +1,6 @@
 import * as test from "testing";
 import * as domino from "domino";
-import { im, ImCache, DomAppender, el, imdom } from "im-layer";
+import { im, ImCache, DomAppender, el, imdom } from "imcf";
 
 test.file("im-dom.test.ts");
 // NOTE: im is assumed correct here.

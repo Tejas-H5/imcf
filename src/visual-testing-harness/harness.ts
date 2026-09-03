@@ -1,7 +1,7 @@
-import { im, ImCache, imdom, el } from "im-layer";
-import { BLOCK, COL, cssVars, END, imui, INLINE, NA, PX, ROW, START } from "im-layer/im-ui";
-import { imButtonIsClicked } from "im-layer/im-ui/components/button";
-import { lerp, lerp01 } from "im-layer/im-ui/components/math-utils";
+import { im, ImCache, imdom, el } from "imcf";
+import { BLOCK, COL, cssVars, END, imui, INLINE, NA, PX, ROW, START } from "imcf/im-ui";
+import { imButtonIsClicked } from "imcf/im-ui/components/button";
+import { lerp, lerp01 } from "imcf/im-ui/components/math-utils";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
 import * as bl from "blog-lang";

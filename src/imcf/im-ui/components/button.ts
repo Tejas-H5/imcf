@@ -1,5 +1,5 @@
-import { DisplayType, imui, INLINE, ROW, cssVars } from "im-layer/im-ui";
-import { imdom, im, ImCache } from "im-layer";
+import { DisplayType, imui, INLINE, ROW, cssVars } from "imcf/im-ui";
+import { imdom, im, ImCache } from "imcf";
 
 // Legacy button component. TODO: move to im-button
 

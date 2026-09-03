@@ -1,5 +1,5 @@
-import { COL, imui, NA, PX, ROW, cssVars } from "im-layer/im-ui";
-import { imdom, im, ImCache } from "im-layer";
+import { COL, imui, NA, PX, ROW, cssVars } from "imcf/im-ui";
+import { imdom, im, ImCache } from "imcf";
 
 // context-menu V0.01
 

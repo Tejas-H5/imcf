@@ -1,6 +1,6 @@
-import { imdom } from "im-layer";
+import { imdom } from "imcf";
 import { imMain } from "./examples/examples";
-import { cssVars, imui, } from "./im-layer/im-ui";
+import { cssVars, imui, } from "./imcf/im-ui";
 
 imui.newCssBuilder().s(`
 html {

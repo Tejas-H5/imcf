@@ -1,5 +1,5 @@
-import { imdom, ImCache, im } from "im-layer";
-import { BLOCK, EM, INLINE_BLOCK, PERCENT , imui, cssVars } from "im-layer/im-ui";
+import { imdom, ImCache, im } from "imcf";
+import { BLOCK, EM, INLINE_BLOCK, PERCENT , imui, cssVars } from "imcf/im-ui";
 
 const cssb = imui.newCssBuilder();
 

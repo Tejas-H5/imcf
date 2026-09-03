@@ -1,9 +1,9 @@
 {
-  "name": "im-layer",
+  "name": "imcf",
   "private": false,
   "version": "0.0.11",
   "author": "Tejas-H5",
-  "description": "An immediate-mode layer over the DOM. But in theory, over anything at all",
+  "description": "An immediate-mode wrapper over the DOM. But in theory, over anything at all",
   "type": "module",
   "scripts": {
     "dev": "node ./build/build.ts devserver",
@@ -30,20 +30,20 @@
   },
   "exports": {
     ".": {
-      "import": "./src/im-layer/index.ts",
-      "types": "./src/im-layer/index.ts"
+      "import": "./src/imcf/index.ts",
+      "types": "./src/imcf/index.ts"
     },
     "./im-ui": {
-      "import": "./src/im-layer/im-ui/index.ts",
-      "types": "./src/im-layer/im-ui/index.ts"
+      "import": "./src/imcf/im-ui/index.ts",
+      "types": "./src/imcf/im-ui/index.ts"
     },
     "./im-ui/components/*": {
-      "import": "./src/im-layer/im-ui/components/*.ts",
-      "types": "./src/im-layer/im-ui/components/*.ts"
+      "import": "./src/imcf/im-ui/components/*.ts",
+      "types": "./src/imcf/im-ui/components/*.ts"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "src/im-layer"
+    "src/imcf"
   ]
 }

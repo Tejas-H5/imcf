@@ -1,4 +1,4 @@
-import { im, ImCache } from "im-layer";
+import { im, ImCache } from "imcf";
 import * as test from "testing";
 
 test.file("im-core.test.ts");

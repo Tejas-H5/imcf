@@ -1,5 +1,5 @@
-import { ImCache, ev, im, imdom } from "im-layer";
-import { BLOCK, COL, PX, ROW, cssVars, imui } from "im-layer/im-ui";
+import { ImCache, ev, im, imdom } from "imcf";
+import { BLOCK, COL, PX, ROW, cssVars, imui } from "imcf/im-ui";
 import { VisualTestHarnessState } from "./harness";
 
 const numIntros = 1;
@@ -121,7 +121,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                             if (im.Memo(c, fg)) imdom.setStyle(c, "border", `${height * 0.05}px solid ${fg}`);
                             if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (height / 6) + "px");
                             if (im.Memo(c, height)) imdom.setStyle(c, "fontWeight", "bold");
-                            imdom.Str(c, "imLayer");
+                            imdom.Str(c, "imcf");
 
                             imui.Begin(c, COL); imui.Align(c); {
                                 imdom.Str(c, "Visual testing harness");

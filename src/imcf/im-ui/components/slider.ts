@@ -1,5 +1,5 @@
-import { im, imdom, ImCache } from "im-layer";
-import { BLOCK, cssVars, imui } from "im-layer/im-ui";
+import { im, imdom, ImCache } from "imcf";
+import { BLOCK, cssVars, imui } from "imcf/im-ui";
 import { clamp, inverseLerp, lerp } from "./math-utils";
 
 const MIN_STEP = 0.0001;

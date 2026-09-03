@@ -1,4 +1,4 @@
-import { imdom, im, ImCache, el } from "im-layer";
+import { imdom, im, ImCache, el } from "imcf";
 
 export type Url = string & { readonly __Url: unique symbol; };
 

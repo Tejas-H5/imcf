@@ -1,10 +1,14 @@
-# Immediate-Mode Layer (Check it out [here](https://tejas-h5.github.io/imjs/))
+# Immediate Mode Control-Flow (Check it out [here](https://tejas-h5.github.io/imjs/))
 
-TODO: im-layer is a corny name. We'll keep thinking.
+The Immediate Mode Control-Flow (`imcf`) framework provides a thin immediate-mode layer over the DOM. 
+The core immediate-mode utilities can be reused to create similar wrappers over any retained more tree structure. 
+Most immediate-mode frameworks opt to use IDs or keys to allow the framework to identify the same
+    element between frames, but after a lot of thinking, I've opted for a control-flow annotation approach instead.
+I can do a writeup explaining this decision in detail, but only if 1 person asks for it anywhere.
 
 [![Test, build, deploy](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
 
-`imLayer` sits between the DOM and your code to rerender your UI at your monitor's refresh-rate
+`imcf` sits between the DOM and your code to rerender your UI at your monitor's refresh-rate
     with `requestAnimationFrame`!
 
 ```
@@ -20,7 +24,7 @@ The page linked above explains the framework in detail, along with how it works
     and provides a couple of tutorials for how to use it.
 
 ```ts
-import { im, imdom, el, ImCache } from "im-layer";
+import { im, imdom, el, ImCache } from "imcf";
 
 imdom.startAnimationLoop(document.body, imMain);
 

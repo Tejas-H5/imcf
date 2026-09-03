@@ -1,26 +1,11 @@
-# imLayer - Overview
+# Overview
 
-`imLayer` sits between the DOM and your code to rerender your UI at your monitor's refresh-rate
-    with `requestAnimationFrame`!
-
-```
-[ your code                         ]
-[ immediate-mode layer              ] <-- This 'framework'
-[ Retained-mode core (e.g the DOM)  ] <-- I've included a layer for DOM as part of the core framework.
-                                          But in theory, the core-framework could be used to wrap any 
-                                          tree-like retained-mode API.
-```
-Surprisingly, it works.
-It's a bit overkill for a documentation page like this one, but I'm somewhat obliged
-    to use it here anyway, aren't I?
-As far as I know, this is a 'new' approach specifically in the web word.
+The Immediate Mode Control-Flow framework (IMCF) is an immediate-mode framework 
+    that sits between the DOM and your code to rerender your UI at your monitor's 
+    refresh-rate with `requestAnimationFrame`.
+As far as I know, this is a 'new' approach to rendering specifically in the web word.
 Or at least, most other web frameworks that have become widely used in industry
 #url[don't work like this., https://youtu.be/0C-y59betmY]
-
-<!-- ## Is it still work trying this UI framework now that AI can oneshot any React component? -->
-<!---->
-<!-- Point your AI at this framework, and ask -->
-<!-- Probably no point in this part, because that is what the AI users would do anyway, if they even found this page that is -->
 
 ## Why make another JavaScript UI framework?
 
@@ -47,7 +32,86 @@ We no longer need a custom event lifecycle that notifies the framework
 Rather, all state can live in whatever objects/datastructures/variables we want,
     and we read it from wherever we think is most appropraite for it to be.
 
-## What does it look like?
+## How does it work?
+
+Most stateful Immediate-mode GUI libraries will let you give each 'node' in the UI tree an 
+    'id' or a 'key', so that it can 'reconcile' which elements from the previous render
+    were successfully carried over to the next render, and which ones were dropped. 
+
+There are three main things I want my immediate-mode system to support:
+#list[
+- Arbitrary state retained between renders inside the tree
+- The ability to reuse every single DOM-nodes no matter what, so that we can always
+    rerender our UIs at 60FPS+ 
+- I do NOT want to give every single div and span in my program a unique 'identifier'.
+]
+I actually don't think this can be reliably done with a reconciliation approach. 
+It's far easier to achieve this if every immediate-mode 'scope' queried/populated
+    the exact same state in the same order, on every single render.
+I explain how this works in detail in #url[The first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+But what this means, is that for a react component like this:
+
+```
+function DateTime({ datTime }: DateTimeProps) {
+    const hours = dateTime.getHours();
+
+    return (
+        <div>
+            <div>
+                {hours < 12 ? <span>Good morning</span> :
+                 hours < 6  ? <span>Good afternoon!</span> : 
+                              <span>Good evening</span>}
+            </div>
+            <div>The time is {formatTime(dateTime)}</div>
+            <div>The hours that have elapsed so far:</div>
+            {Array(hours).map(i => 
+                <div key={i}>{i + 1}</div>
+            )}
+        </div>
+    );
+}
+```
+
+The equivelant `imcf` component can look like:
+
+```
+function imDateTime(c: ImCache, dateTime: Date) {
+    const hours = dateTime.getHours();
+
+    imDivBegin(c); {
+        imDivBegin(c); {
+            if (im.If(c) && hours < 12) {
+                imSpanBegin(c); imStr(c, "Good morning"); imSpanEnd(c);
+            } else if (im.ElseIf(c) && hours < 6) {
+                imSpanBegin(c); imStr(c, "Good afternoon!"); imSpanEnd(c);
+            } else {
+                im.Else(c);
+                imSpanBegin(c); imStr(c, "Good evening"); imSpanEnd(c);
+            } im.IfEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); {
+            imStr(c, "The time is ");
+            imStr(c, formatTime(dateTime));
+        } imDivEnd(c);
+        imDivBegin(c); {
+            imStr(c, "The hours that have elapsed so far: ");
+        } imDivEnd(c);
+        im.For(c); for (let i = 0; i < hours; i++) {
+            imDivBegin(c); imStr(c, i); imDivEnd(c);
+        } im.ForEnd(c);
+    } imDivEnd(c);
+}
+```
+
+Note that the `imDivBegin`, `imSpanBegin` and `imStr` methods aren't included - 
+    you'll have to make them yourself, but it is fairly easy to do so.
+The difference between the React version and the IMCF version is that the imcf
+    version can be rerendered at 60fps in an animation loop, because it allocates
+    far less memory every frame, and 'reconciliation' is dead simple - 
+    every code path is actually being explicit about which DOM nodes it wants to 
+    retain, so the reconciler has FAR less guesswork to do.
+
+## Examples
 
 The code reads a lot like if a React functional component were imperatively rendered.
 The render method will always be _synchronous_ (non-`async`), and it will rerender the entire UI from
@@ -55,41 +119,51 @@ The render method will always be _synchronous_ (non-`async`), and it will rerend
 
 ```ts - The time
 
-import { im, imdom, el, ImCache } from "im-layer";
+import { im, imdom, el, ImCache } from "imcf";
 
-// You would put this in your entry point, but I've commented
-// this out for this example runner.
-// imdom.startAnimationLoop(document.body, imMain);
+function imMain(c: ImCache) {
+    const now = new Date();
+    imDateTime(c, now);
+}
 
 function formatTime(now: Date) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-
     return `${hours}:${minutes}:${seconds}`;
 }
 
-function imMain(c: ImCache) {
-    const now = new Date();
+function imDateTime(c: ImCache, dateTime: Date) {
+    const hours = dateTime.getHours();
 
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.DIV); {
-            const hours = now.getHours();
-            if (im.If(c) && now.getHours() < 12) {
-                imdom.Str(c, "Good morning!");
-            } else if (im.ElseIf(c) && now.getHours() < 6) {
-                imdom.Str(c, "Good afternoon!");
+    imDivBegin(c); {
+        imDivBegin(c); {
+            if (im.If(c) && hours < 12) {
+                imSpanBegin(c); imStr(c, "Good morning"); imSpanEnd(c);
+            } else if (im.ElseIf(c) && hours < 6) {
+                imSpanBegin(c); imStr(c, "Good afternoon!"); imSpanEnd(c);
             } else {
                 im.Else(c);
-                imdom.Str(c, "Good evening!");
+                imSpanBegin(c); imStr(c, "Good evening"); imSpanEnd(c);
             } im.IfEnd(c);
-        } imdom.ElEnd(c, el.DIV);
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, "The time is ")
-            imdom.StrFmt(c, now, formatTime);
-        } imdom.ElEnd(c, el.DIV);
-    } imdom.ElEnd(c, el.DIV);
+        } imDivEnd(c);
+        imDivBegin(c); {
+            imStr(c, "The time is ");
+            imStr(c, formatTime(dateTime));
+        } imDivEnd(c);
+        imDivBegin(c); {
+            imStr(c, "The hours that have elapsed so far: ");
+        } imDivEnd(c);
+        im.For(c); for (let i = 0; i < hours; i++) {
+            imDivBegin(c); imStr(c, i); imDivEnd(c);
+        } im.ForEnd(c);
+    } imDivEnd(c);
 }
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imSpanBegin(c: ImCache) { return imdom.ElBegin(c, el.SPAN); }
+function imSpanEnd(c: ImCache) { return imdom.ElEnd(c, el.SPAN); }
 
 ```
 
@@ -130,11 +204,11 @@ If you don't have motion sickness, tap the example below to un-pause it.
 It shows off most of the functionality of this framework - state management, 
     conditional rendering, list rendering, and animation:
 
-```ts - you will try imLayer ... you will try imLa - hey dont look away
+```ts - you will try IMCF ...
 
 // <------- You can drag this middle thing to resize it btw
 
-const subliminalMessage = "you will try imLayer"
+const subliminalMessage = "you will try IMCF"
 
 function imGalaxyOfDivs(c: ImCache) {
     if (im.IsFirstRender(c)) {
@@ -305,7 +379,7 @@ If you profile this page while the example is running, you'll find that the most
     to data-manipulations done in this framework.
 
 If the code examples haven't put you off the framework by now, then great!
-Here's how you #url[get set up, /?test=How+to+install+imLayer].
+Here's how you #url[get set up, /?test=How+to+install+IMCF].
 
 I've also got tutorials on the page.
 You can see all the pages by mousing over the thing on the center-left.
@@ -318,3 +392,13 @@ Other than all the stuff I make for myself (mostly unremarkable and unknown stuf
     there are no production users. 
 We are venturing off the beaten path.
 Raise issues on #url[this GitHub repository, https://github.com/Tejas-H5/imjs] as needed.
+
+## Is it still work trying this UI framework now that AI can oneshot any React component?
+
+I have yet to use AI witht this framework, but it has been my experience that there
+are a lot of bespoke components that AI can't just oneshot from scratch - you still need to 
+be knowledgeable about the NPM and React ecosystem to get the more complicated UIs to work. 
+
+If you already have a bunch of experience hand-crafting UI interactions in an immediate-mode 
+    game loop setting, this framework should make it a lot easier, without requiring you 
+    to downgrade from real DOM-nodes to draw calls on a canvas.

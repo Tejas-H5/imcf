@@ -3,7 +3,7 @@
 Some existing projects to get you thinking:
 
 #list[
-- #url[imLayer, /] - You're looking at it
+- #url[IMCF, /] - You're looking at it
 - #url[Note Tree, https://github.com/Tejas-H5/Working-on-Tree] - a note-taking App 
     with time-tracking capabilities that saves it's state to IndexedDB that I use every day. 
 - #url[Keyboard rhythm game, https://github.com/Tejas-H5/Javascript-Keyboard] - a rhythm game
@@ -50,7 +50,7 @@ I simply can't be bothered spinning up a backend server and setting up a domain 
 
 If you do decide to start building stuff, the only advice I can give, is to use a "peer dependencies" structure for the
     stuff you write yourself.
-This just the notion that a package can always be imported from a fixed absolute path, like `import from "im-layer"` or
+This just the notion that a package can always be imported from a fixed absolute path, like `import from "imcf"` or
     `import blah from "blog-lang"` - it is not npm or package-manager specific.
 You then structure your project like:
 
@@ -59,7 +59,7 @@ app-dir/
     src/ <-- make this the import root
         // make your 'libraries', i.e folders that can be copy-pasted between projects,
         // something at the import root, such that you can import them directly:
-        im-layer/
+        imcf/
         math-utils/
         blog-lang/
 

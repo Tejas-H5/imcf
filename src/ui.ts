@@ -1,5 +1,5 @@
-import { BLOCK, imui, PX, ROW } from "im-layer/im-ui";
-import { im, imdom, el, ImCache } from "im-layer";
+import { BLOCK, imui, PX, ROW } from "imcf/im-ui";
+import { im, imdom, el, ImCache } from "imcf";
 
 export const imStr = imdom.Str;
 

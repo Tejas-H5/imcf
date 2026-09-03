@@ -1,5 +1,5 @@
-import { imdom, im, ImCache, el } from "im-layer";
-import { BLOCK, imui } from "im-layer/im-ui";
+import { imdom, im, ImCache, el } from "imcf";
+import { BLOCK, imui } from "imcf/im-ui";
 
 type ImCanvasRenderingContext = [
     canvas: HTMLCanvasElement,
