@@ -7,7 +7,7 @@ We'll be seeing how we can make use of the global event system that
     I've decided to ship _alongside_ this framework as opposed to a separate library.
 
 I assume you're familiar with how the framework works by now - if not, you'll 
-have to check out #url[Tutorial 1, /?test=Tutorial+1+-+a+TODO+List].
+have to check out #url[Tutorial 0, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations].
 
 First let's make the outline. 
 I'm thinking we need 3 columns to put our tasks in - "Todo", "In progress" and "Done".

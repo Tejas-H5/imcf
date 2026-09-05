@@ -85,20 +85,15 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 			i = toNonWhitespace(tsCode, i);
 			i = skipTypeExpression(tsCode, i);
 		} else if (compare(tsCode, i, "{")) {
-			// Mainly to avoid having to parse expressions.
-			const iPrev = toNonWhitespacePrev(tsCode, i - 1);
-			if (
-				comparePrev(tsCode, i, "({") ||
-				comparePrev(tsCode, iPrev, "return")
-			) {
-				const start = i;
-
-				i = skipObject(tsCode, i);
-				const end = i;
-				const skippedText = tsCode.substring(start, end);
-				sb.push(skippedText);
-				console.log("skipping object", skippedText);
-			}
+			// Mainly to avoid having to parse expressions, we assume anything
+			// in an object is a value.
+			//
+			const start = i;
+			i = skipObject(tsCode, i);
+			const end = i;
+			const skippedText = tsCode.substring(start, end);
+			sb.push(skippedText);
+			console.log("skipping object", skippedText);
 		} else if (compare(tsCode, i, "case ")) {
 			const start = i;
 			while (i < tsCode.length && tsCode[i] !== ":") {

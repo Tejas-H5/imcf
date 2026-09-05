@@ -1,8 +1,7 @@
 # Tutorial 2 - bullet hell game
 
-Make sure you've followed along with the 
-    #url[first tutorial, /?test=Tutorial+1+-+a+TODO+List], where we learn 
-    the underpinnings of the entire framework.
+Make sure you've read #url[Tutorial 0, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations], 
+    where we learn the underpinnings of the entire framework.
 
 This tutorial assumes you already know everything from there, and builds on it.
 Also you should know some basic HTML+CSS already. 

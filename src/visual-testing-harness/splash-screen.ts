@@ -121,7 +121,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                             if (im.Memo(c, fg)) imdom.setStyle(c, "border", `${height * 0.05}px solid ${fg}`);
                             if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (height / 6) + "px");
                             if (im.Memo(c, height)) imdom.setStyle(c, "fontWeight", "bold");
-                            imdom.Str(c, "imcf");
+                            imdom.Str(c, "IMCF");
 
                             imui.Begin(c, COL); imui.Align(c); {
                                 imdom.Str(c, "Visual testing harness");

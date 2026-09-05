@@ -1,5 +1,7 @@
 import { assert } from "./assert";
 
+// Immediate Mode Control-Flow 
+
 // Conventions
 //  - An 'immediate mode' method or 'im' method is any method that eventually _writes_ to the `Cache`.
 //    These methods should ideally be prefixed with 'im'.
@@ -541,7 +543,8 @@ function imGet<T>(
     return entries[idx + 1];
 }
 
-const CONDITIONAL_RENDERING_ERROR_MESSAGE = `Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state`;
+const CONDITIONAL_RENDERING_ERROR_MESSAGE = `Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state.
+If it's the latter, try using im.For/im.ForEnd, im.If/im.IfEnd, im.Switch/im.SwitchEnd or im.Try/im.Catch/im.TryEnd.`;
 
 /**
  * Called whenever we need {@link __BlockConditionalEnd} to know that an

@@ -82,7 +82,7 @@ The default TypeScript formatter will never add or remove newlines, and only
     formats whiltespace.
 That's the one that I use.
 
-Now that you're set up, you'll want to do the #url[first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+Now that you're set up, you'll want to do the #url[first tutorial, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations].
 It's the only one that you shouldn't skip - do that one first, and then the others
 are optional.
 

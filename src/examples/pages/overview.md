@@ -48,7 +48,7 @@ There are three main things I want my immediate-mode system to support:
 I actually don't think this can be reliably done with a reconciliation approach. 
 It's far easier to achieve this if every immediate-mode 'scope' queried/populated
     the exact same state in the same order, on every single render.
-I explain how this works in detail in #url[The first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+I explain how this works in detail in #url[The first tutorial, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations].
 But what this means, is that for a react component like this:
 
 ```
@@ -194,7 +194,7 @@ It's not all sunshine and rainbows:
 - If you're used to JSX, it will be a pain to type out at first. 
 - Conditional rendering/control flow of any kind must adhere to certain 
     simple and easy to remember yet unusual rules (explained more in 
-    #url[Tutorial 1, /?test=Tutorial+1+-+a+TODO+List]). The example above
+    #url[Tutorial 0, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations]). The example above
     already contains `im.If` and `im.IfElse` - these are the things you wouldn't
     expect an immediate-mode UI system to usually have, and they are
     what I'm referring to here.
@@ -383,7 +383,7 @@ Here's how you #url[get set up, /?test=How+to+install+IMCF].
 
 I've also got tutorials on the page.
 You can see all the pages by mousing over the thing on the center-left.
-You'll want to start on #url[The first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+You'll want to start on #url[The first tutorial, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations].
 The rest can be skipped.
 
 ## Production usage

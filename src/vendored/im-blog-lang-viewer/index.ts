@@ -9,6 +9,7 @@ import {
 	COL,
 	cssVars,
 	DisplayType,
+	EM,
 	imui,
 	INLINE,
 	LEFT,
@@ -63,8 +64,10 @@ export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options 
 	} imEnd(c);
 }
 
+const BLOCK_GAP_EM = 0.5;
+
 export function imRenderBlocksInternal(c: ImCache, blocks: bl.Block[], options: BlogLangRenderOptions) {
-	imBegin(c, COL); imui.Gap(c, 5, PX); {
+	imBegin(c, COL); imui.Gap(c, BLOCK_GAP_EM, EM); {
 		im.For(c); for (let i = 0; i < blocks.length; i++) {
 			const block = blocks[i];
 
@@ -118,6 +121,9 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, otherBlocks: 
 				im.Switch(c, block.style); {
 					const listType = block.style === bl.LS_ORDERED ? el.OL : el.UL;
 					imdom.ElBegin(c, listType); {
+						imui.Layout(c, COL);
+						imui.Gap(c, BLOCK_GAP_EM, EM);
+
 						im.For(c); for (const item of block.items) {
 							imdom.ElBegin(c, el.LI); {
 								imRenderBlocksInternal(c, item.blocks, options);
@@ -185,7 +191,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, otherBlocks: 
 
 export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[], options: BlogLangRenderOptions) {
 	if (im.IsFirstRender(c)) {
-		imdom.setStyle(c, "lineHeight", "1.5");
+		imdom.setStyle(c, "lineHeight", "1.3");
 	}
 	
 	im.For(c); for (const item of items) {
@@ -273,7 +279,8 @@ export function imItemUrlEnd(c: ImCache, opensExternally: boolean) {
 				} else {
 					im.IfElse(c);
 
-					// Google search box AI generated this icon btw, lets go. First AI code in the codebase
+					// Google search box AI generated this icon btw, lets go. First AI code in the codebase.
+					// This kinda means that the AI will do fine writing code in this framework.
 					imdom.ElSvgBegin(c, elsvg.SVG); {
 						if (im.IsFirstRender(c)) {
 							imdom.setAttr(c, "width", "14");

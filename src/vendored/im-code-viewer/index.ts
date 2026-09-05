@@ -44,6 +44,9 @@ export function imCodeViewer(
 	const maxLineNumberSize = getMaxLineNumberSize(numLines);
 
 	imui.Begin(c, BLOCK); imCodeStyle(c); {
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "padding", "4px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "borderRadius", "4px");
+
 		if (im.If(c) && s.diff) {
 			let lineIdx = 0;
 			im.For(c); for (let blockIdx = 0; blockIdx < s.diff.length; blockIdx++) {
@@ -152,7 +155,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
 }
 
 function getMaxLineNumberSize(numLines: number) {
-    return Math.ceil(Math.log10(numLines));
+    return Math.floor(Math.log10(numLines)) + 1;
 }
 
 function lineNumberToStr(num: number, maxLineNumberSize: number) {

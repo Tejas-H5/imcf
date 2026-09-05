@@ -7,6 +7,7 @@ import page1 from "./pages/installing.md";
 import page7 from "./pages/the-end.md";
 
 // Not sure where it should go yet
+import tutorial0 from "./pages/tutorial-0.md";
 import tutorial1 from "./pages/tutorial-1-todo-list.md";
 import tutorial2 from "./pages/tutorial-2.md";
 import tutorial3 from "./pages/tutorial-3.md";
@@ -53,6 +54,7 @@ const modules = [
 const tests: VisualTest[] = [
     newVisualTestFromBlogLang(page0, modules),
     newVisualTestFromBlogLang(page1, modules),
+    newVisualTestFromBlogLang(tutorial0, modules),
     newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(tutorial3, modules),

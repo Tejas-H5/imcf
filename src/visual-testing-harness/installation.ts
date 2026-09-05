@@ -51,7 +51,7 @@ export function imVisualTestInstallation(
     harness.installations.push(s);
     s.title = title;
 
-    imui.Begin(c, BLOCK); {
+    imui.Begin(c, COL); imui.Gap(c, 4, PX); {
         const visibility = imdom.TrackVisibility(c, 1);
 
         imui.Begin(c, ROW); imui.Align(c); imui.Justify(c); {

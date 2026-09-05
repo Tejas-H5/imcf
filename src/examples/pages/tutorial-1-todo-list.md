@@ -1,9 +1,8 @@
 # Tutorial 1 - a TODO List
 
-We'll implement a simple TODO list.
-Along the way, we will learn how the framework works, and how to use it.
-You'll need to at least skim over this tutorial to get how the framework works.
-But luckily, it's the only one you actually _need_ - the rest are optional extras.
+Make sure you've read
+    #url[Tutorial 0, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations]
+    first.
 
 ## Part 0 - getting started
 
@@ -19,7 +18,7 @@ There are a lot of ways to do this - if you don't know how, I'd suggest
 To get started, you'll need to paste this into your entrypoint:
 
 ```typescript
-import { ImCache, im, imdom } from "imcf";
+import { im, imdom, ImCache } from "imcf";
 
 imdom.startAnimationLoop(document.body, imMain);
 
@@ -28,1522 +27,1118 @@ function imMain(c: ImCache) {
 }
 ```
 
-`imdom.startAnimationLoop` Sets up a render loop where you can start rendering DOM nodes. 
-The assumption is that you only ever start one of these.
-Since `requestAnimationFrame` is actually DOM-related, I've put the animation loop 
-    helper in `imdom`, as opposed to the main `im` namespace that is solely
-    dedicated to immediate-mode-state helpers.
+#list[
+- `im` contains the core framework primitives. This object is a namespace object, and holds no state.
+- `imdom` contains the DOM-specific wrapper functions. This object is a namespace object, and holds no state.
+- `ImCache` is a more or less opaque object where we'll be putting all our state
+    that we reuse between renders.
+- `imdom.startAnimationLoop` Sets up a render loop where you can start rendering DOM nodes. 
+    The DOM node you pass in will be the root.
+]
 
 
 ## Part 1 - getting the skeleton of the app in place
 
-Let's get some TODO items drawing:
+Let's get some TODO items drawing. I'll extract out a bunch of helpers for the 
+    DOM elements as well:
 
 ```ts - Basic skeleton
-import { ImCache, im, imdom, el } from "imcf";
-
-// Storing everything in global state for now. 
-const items = [
-    // Let's keep the tutorial simple, and only store strings instead
-    // of structured objects
-    "item 1",
-    "item 2",
-    "item 3",
-];
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); {
-        imdom.Str(c, "TODO List"); 
-    } imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
 
-    // NOTE: there is a bug here - we'll fix it later
-    for (const item of items) {
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item);
-        } imdom.ElEnd(c, el.DIV);
-    }
+    imDivBegin(c); {
+        imStr(c, "Item 1");
+    } imDivEnd(c);
+    imDivBegin(c); {
+        imStr(c, "Item 2");
+    } imDivEnd(c);
+    imDivBegin(c); {
+        imStr(c, "Item 3");
+    } imDivEnd(c);
 }
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
-Nice! The next thing I want to implement, is adding more items:
+We can actually extract out this repeating thing into a TODO list item component:
 
-```ts - Basic skeleton - adding items - attempt one #diff[-1] #id[before_tangent]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    "item 1",
-    "item 2",
-    "item 3",
-];
+```ts - Basic skeleton (refactored) #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); {
-        imdom.Str(c, "TODO List"); 
-    } imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
 
-    // NOTE: there is a bug here - we'll fix it later
-    for (const item of items) {
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item); 
-        } imdom.ElEnd(c, el.DIV);
+    imTodoItem(c, "Item 1");
+    imTodoItem(c, "Item 2");
+    imTodoItem(c, "Item 2");
+}
+
+function imTodoItem(c: ImCache, name: string) {
+    imDivBegin(c); {
+        imStr(c, name);
+    } imDivEnd(c);
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+If we want to do anything with these items, we'll want to render them by iterating
+actual state:
+
+```ts - Basic skeleton (state driven) #diff[-1] #id[left-off-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+const todoList = [
+    "Item 1",
+    "Item 2",
+    "Item 3",
+]
+
+function imTodoList(c: ImCache) {
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    for (const item of todoList) {
+        imTodoItem(c, item);
     }
+}
 
+function imTodoItem(c: ImCache, name: string) {
+    imDivBegin(c); {
+        imStr(c, name);
+    } imDivEnd(c);
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+We'll come back to this.
+First, I want to make a button component, so we can implement
+an "Add" button that adds list items.
+Let's try implementing a simple button 
+component that we can use to respond to mouse clicks:
+
+```ts - Button component
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+function imMain(c: ImCache) {
+    imButton(c, "Button 1");
+}
+
+function imButton(c: ImCache, buttonText: string) {
     imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            items.push("item " + items.length);
-        }
-
-        imdom.Str(c, "New Item");
+        imStr(c, buttonText);
     } imdom.ElEnd(c, el.BUTTON);
 }
+
+```
+
+Right now, the button doesn't do anything. 
+We can use another helper from `imdom` to handle the click event:
+
+```ts - Button component, with clicking #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el, ev } from "imcf";
+
+function imMain(c: ImCache) {
+    imButton(c, "Button 1");
+}
+
+function imButton(c: ImCache, buttonText: string) {
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            console.log("" + clickEvent, "We clicked this button");
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+}
+
+```
+
+One way to make this button reuseable is to return a boolean saying 
+    whether it was clicked or not:
+
+```ts - Button component - final (for now) #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el, ev } from "imcf";
+
+function imMain(c: ImCache) {
+    if (imButtonIsClicked(c, "Button 1")) {
+        console.log("" + clickEvent, "We clicked this button");
+    }
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+```
+
+Let's use this button to implement adding items to the TODO list:
+
+```ts - Add button  #diff[left-off-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+const todoList = [
+    "Item 1",
+    "Item 2",
+    "Item 3",
+]
+
+function imTodoList(c: ImCache) {
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    for (const item of todoList) {
+        imTodoItem(c, item);
+    }
+
+    if (imButtonIsClicked(c, "Add item")) {
+        todoList.push("Item 1");
+    }
+}
+
+function imTodoItem(c: ImCache, name: string) {
+    imDivBegin(c); {
+        imStr(c, name);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
 Strange - you would have thought that would work, but it didn't:
 
 ```
-Error: Expected div here, but got button instead - Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state
+Error: Expected div here, but got button instead - Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state. If it's the latter, try using im.For/im.ForEnd, im.If/im.IfEnd, im.Switch/im.SwitchEnd or im.Try/im.Catch/im.TryEnd.
 ```
 
-## Part 1.5 - understanding the core of the framework
+We need to add `im.For`/`im.ForEnd` to the for-loop:
 
-Before we can go further, we'll need to understand how the framework actually works.
-Every render, immediate-mode methods will push and pop 'immediate-mode entries' on
-    the immediate-mode cache. 
-These entries are just arrays.
-State is saved into them using `im.Get` and `im.Set` like so:
 
-```
-function imThing(c: ImCache) {
-    let state = im.Get(c, document.createTextNode);
-    if (!state) state = im.Set(c, document.createTextNode("Hi"));
+```ts - Add button - working  #diff[-2]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
-    let state2 = im.Get(c, newDomAppender);
-    if (!state2) state2 = im.Set(c, newDomAppender(getCurrentParent(c)));
-
-    ...
-}
-```
-
-All immediate-mode methods will eventually call `im.Get` and `im.Set` at some point
-    to retain state between renders, like DOM nodes, the previous text being rendered, 
-    so on.
-As a result, state becomes associated with the
-    callsite by the order in which it was called:
-
-#table[
-#row #cell*Code* #cell *Immediate-mode entry list*
-#row
-#cell
-``` typescript
-const items = [ "item 1", "item 2", "item 3" ];
+const todoList = [
+    "Item 1",
+    "Item 2",
+    "Item 3",
+]
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); {       // #1
-        imdom.Str(c, "TODO List");   // #2
-    } imdom.ElEnd(c, el.H3);         
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
 
-    for (const item of items) { // items has 3 values
-        imdom.ElBegin(c, el.DIV); { // #3, #5, #7
-            imdom.Str(c, item);     // #4, #6, #8
-        } imdom.ElEnd(c, el.DIV);   
-    }
-
-    
-    imdom.ElBegin(c, el.BUTTON); { // #9
-        const clickEv = imdom.On(c, ev.CLICK); // #10
-        if (clickEv) {
-            items.push("item " + items.length);
-        }
-
-        imdom.Str(c, "New Item"); // #11
-    } imdom.ElEnd(c, el.BUTTON); 
-}
-```
-#cell
-```text
-c[CACHE_CURRENT_ENTRIES]: [
-    DomElement{ h3 },  imdom.newDomAppender,     #1
-    DomTextElement,    document.createTextNode,  #2
-
-    DomElement{ div }, imdom.newDomAppender,     #3
-    DomTextElement,    document.createTextNode,  #4
-    DomElement{ div }, imdom.newDomAppender,     #5
-    DomTextElement,    document.createTextNode,  #6
-    DomElement{ div }, imdom.newDomAppender,     #7
-    DomTextElement,    document.createTextNode,  #8
-
-    DomElement{ button },      imdom.newDomAppender,     #9
-    Inline state for imdom.On, imdom.On,                 #10
-    DomTextElement,            document.createTextNode,  #11
-]
-```
-]
-
-You'll notice that even though we're putting text 'inside' divs and buttons,
-    immediate-mode state is still stored linearly. 
-This is because the concept of a 'parent' is completely orthogonal to 
-    immediate-mode state. 
-The only thing that matters is that the same state is accessed in the same order
-    every single render, and I hope that the table above has made it obvious why!
-
-(Also if you've used React before, doesn't this sound a lot like the 
-    #url[rule of hooks, https://react.dev/reference/rules/rules-of-hooks]? 
-Coincidence? I've never read the React sourcecode, but I'll hazard a guess that 
-    what they call 'hooks' and what I call 'immediate-mode state' are the same thing,
-    though we've implemented it differently)
-
-But we don't just store your state - we store a second thing called the 'type identifier'
-    alongside your state. 
-Rather than being a number or string, it is a reference to a method that 
-    may or may not have been used to construct the state. 
-This is more useful than a number, or a literal type id, because:
-#list[
-- You don't need to generate a bunch of numbers for all your state
-- You probably already have a method or two lying around anyway
-- Methods can usually associated with a return-type, which can help us out with 
-    type-inference when we want it to.
-]
-This should catch the majority of common conditional/out-of-order rendering bugs.
-When they don't line up right, it's because you've started/stopped rendering something in
-    that area, which is exactly the kind of bug that we wanted to catch.
-
-In the example above, the `typeId` actually wasn't enough!
-If you look closer, the `typeId` for a div, _and_ for a button are both 
-    `imdom.newDomAppender`.
-So how the heck did `im.Get` and `im.Set` tell them apart? 
-It didn't. `imdom` needed to add it's own assertions within the 
-    `imdom.ElBegin`/`imdom.ElEnd` method to catch this.
-There are sufficiently many begin/end pair assertions in `im` and `imdom` such that 
-    you don't have to write them in your own code at all.
-
-Back to the problem at hand - how do we render multiple things, if we need to render
-    the same number of things every render?
-The answer, is to look at list rendering differently.
-Rather rendering n items, we're rendering 1 list, where each loop iteration renders 1 item
-    in a repeating manner. 
-This is exactly what we achieve with the `im.For` / `im.ForEnd` control-flow annotation.
-Let's try adding multiple items again:
-
-```ts - Basic skeleton - adding more items - working #diff[before_tangent] #id[after_tangent]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    "item 1",
-    "item 2",
-    "item 3",
-];
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); {
-        imdom.Str(c, "TODO List"); 
-    } imdom.ElEnd(c, el.H3); 
-
-    // We have now added im.For(c); here. 
-    // I typically write it on the same line as `for` because
-    // I think it looks nicer.
-    im.For(c); for (const item of items) {
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item); 
-        } imdom.ElEnd(c, el.DIV);
-    // im.For must be closed off with im.ForEnd. 
+    im.For(c); for (const item of todoList) {
+        imTodoItem(c, item);
     } im.ForEnd(c);
 
-    imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            items.push("item " + (items.length + 1));
-        }
-
-        imdom.Str(c, "New Item");
-    } imdom.ElEnd(c, el.BUTTON);
-}
-```
-
-Cool, it works. 
-And we were able to fix the `(items.length + 1)` bug as well.
-
-How do callsites get mapped to state now?
-
-#table[
-#row #cell*Code* #cell *Immediate-mode entry list*
-#row
-#cell
-``` typescript
-const items = [ "item 1", "item 2", "item 3" ];
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); {       // #c0-1
-        imdom.Str(c, "TODO List");   // #c0-2
-    } imdom.ElEnd(c, el.H3);         
-
-    im.For(c); for (const item of items) { // #c0-3
-        imdom.ElBegin(c, el.DIV); { // #c1-1, #c1-3, #c1-5
-            imdom.Str(c, item);     // #c1-2, #c1-4, #c1-6
-        } imdom.ElEnd(c, el.DIV);   
-    } im.ForEnd(c);
-
-    imdom.ElBegin(c, el.BUTTON); { // #c0-4
-        const clickEv = imdom.On(c, ev.CLICK); // #c0-5
-        if (clickEv) {
-            items.push("item " + items.length);
-        }
-
-        imdom.Str(c, "New Item"); // #c0-6
-    } imdom.ElEnd(c, el.BUTTON); 
-}
-```
-#cell
-```text
-c[CACHE_CURRENT_ENTRIES + 0]: [
-    DomElement{ h3 },  imdom.newDomAppender,     #c0-1
-    DomTextElement,    document.createTextNode,  #c0-2
-
-    CacheEntriesList,  im.CacheEntriesBegin      #c0-3
-
-    DomElement{ button },      imdom.newDomAppender,     #c0-4
-    Inline state for imdom.On, imdom.On,                 #c0-5
-    DomTextElement,            document.createTextNode,  #c0-6
-]
-c[CACHE_CURRENT_ENTRIES + 1]: [
-    DomElement{ div }, imdom.newDomAppender,     #c1-1
-    DomTextElement,    document.createTextNode,  #c1-2
-
-    DomElement{ div }, imdom.newDomAppender,     #c1-3
-    DomTextElement,    document.createTextNode,  #c1-4
-
-    DomElement{ div }, imdom.newDomAppender,     #c1-5
-    DomTextElement,    document.createTextNode,  #c1-6
-
-    ...  growable
-]
-```
-]
-
-The subtle difference for `im.For`, is that it is expected to be variable in length,
-but all the same rules still apply. 
-State still can't be accessed out-of-order or conditionally.
-It does mean you can get a bit clever though - for example, if you wanted to omit a particular
-component for the first iteration, but render it for subsequent iterations, 
-that is totally valid, since the same indices will still always request the same state:
-
-```ts - Comma seperated list
-function imCommaSeperatedList(c: ImCache) {
-    for (let i = 0; i < 10; i++) {
-        if (i > 0) {
-            imdom.Str(c, ", ")
-        }
-
-        imdom.Str(c, i);
+    if (imButtonIsClicked(c, "Add item")) {
+        todoList.push("Item " + (todoList.length + 1));
     }
 }
-```
 
-If you're expecting to find similar control-flow annotations to be present for switches, 
-    if-statements, and try-catch blocks, well done - you've been paying attention. 
-Here's what it looks like for if-statements:
-
-```ts - if-statements
-
-function imIfStatementDemo(c: ImCache) {
-    const thisSecond = Math.floor(Date.now() / 1000) % 3;
-    if (im.If(c) && thisSecond === 0) {
-        imdom.Str(c, "This second is perfectly divisble by 3");
-    } else if (im.ElseIf(c) && thisSecond === 1) {
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, "This second is NOT perfectly divisbly by 3");
-        } imdom.ElEnd(c, el.DIV);
-    } else {
-        im.Else(c);
-
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, "Soon, that will be fixed. ");
-        } imdom.ElEnd(c, el.DIV);
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, "Circle of life and all.");
-        } imdom.ElEnd(c, el.DIV);
-    } im.IfEnd(c);
+function imTodoItem(c: ImCache, name: string) {
+    imDivBegin(c); {
+        imStr(c, name);
+    } imDivEnd(c);
 }
 
-```
-
-Conditional blocks also allow a variable number of immediate-mode state entries, 
-    but they are not as flexible as list blocks.
-Rather, they allow either `n` entries every render, or 0 entries. 
-If 0 entries were rendered, the framework assumes that 
-    the corresponding isn't being taken anymore - it can unmount/destroy those entries,
-    and prepare the entries for the next branch, so on untill `im.IfEnd`.
-
-Here's what it looks like for switch statements:
-
-```ts - switch-statements
-
-function imSwitchStatementDemo(c: ImCache) {
-    const thisSecond = Math.floor(Date.now() / 1000) % 3;
-    im.Switch(c, thisSecond); switch(thisSecond) {
-        case 0: {
-            imdom.Str(c, "This second is perfectly divisble by 3");
-        } break;
-        case 1: {
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, "This second is NOT perfectly divisbly by 3");
-            } imdom.ElEnd(c, el.DIV);
-        } break;
-        case 2: {
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, "Soon, that will be fixed. ");
-            } imdom.ElEnd(c, el.DIV);
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, "Circle of life and all.");
-            } imdom.ElEnd(c, el.DIV);
-        } break;
-    } im.SwitchEnd(c);
-}
-
-```
-
-A switch stores a `Map<ValidKey, ImCacheEntries>`, and retrieves the one
-    corresponding to the key on demand.
-Every unique key is assumed to map to it's own component/state.
-Unlike if-branches, switches will actually invoke destructors on their
-    elements and free up memory when a branch is not being taken.
-This makes them less performant than if-statements, but also less memory-hungry.
-The same thing holds true for `im.KeyedBegin` / `im.KeyedEnd`, which we will encounter later.
-
-We also have control-flow annotationsfor try/catch. 
-They are a bit more involved, but you'll need them to implement error 
-    boundaries in your app:
-
-```ts - try-catch example
-
-function imTryCatchExample(c: ImCache) {
-    const tryState = im.Try(c); try {
-        const { err, recover } = tryState;
-        if (im.If(c) && err) {
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, "An error occured:");
-            } imdom.ElEnd(c, el.DIV);
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, err);
-            } imdom.ElEnd(c, el.DIV);
-        } else {
-            im.Else(c);
-
-            imdom.Str(c, "Gee I hope nothing bad will happen");
-
-            throw new Error("Something bad happend");
-        } im.IfEnd(c);
-    } catch(err) {
-        im.TryCatch(c, tryState, err);
-
-        // Don't actually render anything in this region.
-        // The only way to do that is to throw an exception every animation frame.
-        // This destroys performance, and pollutes logs.
-    } im.TryEnd(c, tryState);
-}
-
-```
-
-
-## Part 2 - onwards
-
-Let's get back to building the TODO list. 
-
-I want to be able to edit some of these items though.
-I also don't want them to be center-aligned.
-Let's start putting them in text inputs, instead of divs.
-
-To make sure that they're actually updating, let's render 
-    a second copy of the list just below our inputs that should update
-    in realtime.
-
-```ts - Basic skeleton - adding more items - editing #diff[after_tangent]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    "item 1",
-    "item 2",
-    "item 3",
-];
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    // Use im.IsFirstRender to run expensive initialisation logic.
-                    if (im.IsFirstRender(c)) {
-                        input.value = item;
-                    }
-
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx] = input.value;
-                        // Currently, there is one frame of latency between when we edit it here
-                        // and when the animation frame rerenders the component. 
-                        // This is fine for 99% of usecases.
-                        // However, we can get the framework to enqueue a second render pass straight-away
-                        // in the same event tick by uncommenting this:
-                        // im.rerenderCache(c);
-                        // I'm leaving it commented out
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                imdom.Str(c, item);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imdom.ElBegin(c, el.BUTTON); {
-            const clickEv = imdom.On(c, ev.CLICK);
-            if (clickEv) {
-                items.push("item " + (items.length + 1));
-            }
-            imdom.Str(c, "New Item");
-        } imdom.ElEnd(c, el.BUTTON);
-    } imdom.ElEnd(c, el.DIV);
-}
-```
-
-Seems like it's working! But I want a way to prioritize my TODO list. 
-Let's try adding a way to move things around. 
-We'll probably want to make our button component reuseable:
-
-```ts - Basic skeleton - moving around, attempt 1 #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    "item 1",
-    "item 2",
-    "item 3",
-];
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.IsFirstRender(c)) {
-                        input.value = item;
-                    }
-
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx] = input.value;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                if (im.If(c) && itemIdx > 0) {
-                    if (imButtonIsClicked(c, "up")) {
-                        [items[itemIdx - 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx - 1]];
-                    }
-                } im.IfEnd(c);
-
-
-                if (im.If(c) && itemIdx < items.length - 1){ 
-                    if (imButtonIsClicked(c, "down")) {
-                        [items[itemIdx + 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx + 1]];
-                    }
-                } im.IfEnd(c);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            items.push("item " + (items.length + 1));
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item);
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
     let result = false;
 
     imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
             result = true;
         }
-        imdom.Str(c, text);
-    } imdom.ElEnd(c, el.BUTTON);
 
-    return result;
-}
-```
-
-It doesn't seem to work. 
-Our debug view shows that the items are being moved up and down correctly,
-    but the inputs themselves never change. 
-It's probably the `im.IsFirstRender` thing that makes the text input
-    only sync values on the first render.
-Let's just drop that:
-
-```ts - Basic skeleton - still not working #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    "item 1",
-    "item 2",
-    "item 3",
-];
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    input.value = item;
-
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx] = input.value;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                if (im.If(c) && itemIdx > 0) {
-                    if (imButtonIsClicked(c, "up")) {
-                        [items[itemIdx - 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx - 1]];
-                    }
-                } im.IfEnd(c);
-
-
-                if (im.If(c) && itemIdx < items.length - 1){ 
-                    if (imButtonIsClicked(c, "down")) {
-                        [items[itemIdx + 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx + 1]];
-                    }
-                } im.IfEnd(c);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            items.push("item " + (items.length + 1));
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item);
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
-    let result = false;
-
-    imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            result = true;
-        }
-        imdom.Str(c, text);
+        imStr(c, buttonText);
     } imdom.ElEnd(c, el.BUTTON);
 
     return result;
 }
 
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
-It's still not working! 
-The input value is being updated so frequently, that we can no longer type our own text in 
-    edgewise. 
-We need to only update the input's text when the item's text has actually changed.
-We can use `im.Memo` for this:
+If `im.For` is unfamiliar to you, you should make sure you've read 
+    #url[Tutorial 0, /?test=Tutorial+0+-+Immediate+Mode+Control+Flow+annotations].
 
-```ts - Basic skeleton - 'working'! #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
+The list is useless if we can't edit the contents of each item.
+We could update `imTodoItem` to take in an index, so that it can 
+    edit the `i`th item in the array. 
+Instead, I'll update the todo list item to be a proper object, 
+    so we can pass it around by reference. 
 
-const items = [ "item 1", "item 2", "item 3" ];
+```ts - Todo items as objects  #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    // Use im.Memo to check if a value has changed between frames.
-                    if (im.Memo(c, item)) {
-                        input.value = item;
-                    }
-
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx] = input.value;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                if (im.If(c) && itemIdx > 0) {
-                    if (imButtonIsClicked(c, "up")) {
-                        [items[itemIdx - 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx - 1]];
-                    }
-                } im.IfEnd(c);
-
-
-                if (im.If(c) && itemIdx < items.length - 1){ 
-                    if (imButtonIsClicked(c, "down")) {
-                        [items[itemIdx + 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx + 1]];
-                    }
-                } im.IfEnd(c);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            items.push("item " + (items.length + 1));
-        }
-    } imdom.ElEnd(c, el.DIV);
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
 }
 
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item);
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
-    let result = false;
-
-    imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            result = true;
-        }
-        imdom.Str(c, text);
-    } imdom.ElEnd(c, el.BUTTON);
-
-    return result;
-}
-
-```
-
-Seems like it's working! Alright, I also need to start storing whether we've completed
-a task or not. We need to make a couple changes:
-
-#list[
-- items now needs to become a list of objects. I had thought strings would be enough
-    for this demo, but I was wrong.
-- We need a checkbox we can use to keep track of the done state.
+const todoList = [
+    newTodoListItem("Item 1"),
+    newTodoListItem("Item 2"),
+    newTodoListItem("Item 3"),
 ]
 
-
-```ts - Basic skeleton - let's add some checkboxes to toggle a DONE state #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-function newTodoListItem(name: string) {
-    return {
-        name: name,
-        done: false,
-    };
-}
-
-const items = [
-    // Now a structured object
-    newTodoListItem("item 1"),
-    newTodoListItem("item 2"),
-    newTodoListItem("item 3"),
-];
-
-
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
 
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                // This is the new checkbox we added.
-                // It responds to input events, and toggles the checked state.
-                const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.IsFirstRender(c)) {
-                        imdom.setAttr(c, "type", "checkbox");
-                    }
-
-                    // Still need to derive checked from the actual state...
-                    // If only there were a better way ...
-                    if (im.Memo(c, item.done)) {
-                        checkbox.checked = item.done;
-                    }
-
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        item.done = !item.done;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.Memo(c, item.name)) input.value = item.name;
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx].name = input.value;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                if (im.If(c) && itemIdx > 0) {
-                    if (imButtonIsClicked(c, "up")) {
-                        [items[itemIdx - 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx - 1]];
-                    }
-                } im.IfEnd(c);
-
-                if (im.If(c) && itemIdx < items.length - 1){ 
-                    if (imButtonIsClicked(c, "down")) {
-                        [items[itemIdx + 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx + 1]];
-                    }
-                } im.IfEnd(c);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            const newItem = newTodoListItem("item " + (items.length + 1));
-            items.push(newItem);
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item.name);
-            imdom.Str(c, item.done ? "[done]" : "[incomplete]");
-        } imdom.ElEnd(c, el.DIV);
+    im.For(c); for (const item of todoList) {
+        imTodoItem(c, item);
     } im.ForEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+    }
 }
 
-function imButtonIsClicked(c: ImCache, text: string): boolean {
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        imStr(c, item.name);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
     let result = false;
 
     imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
             result = true;
         }
-        imdom.Str(c, text);
+
+        imStr(c, buttonText);
     } imdom.ElEnd(c, el.BUTTON);
 
     return result;
 }
 
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
-It works! We didn't need to rearchitect very much, and
- not a single closure, or `.map` in sight. Very nice.
-And, we didn't have to extract out a list component. 
-We can defer that to a point in time where we're better equipped
-to make a correct boundary.
+Rather than making an input component, I'm going to just try to make this in-place.
 
-## Part 3 - let's get fancy
+```ts - Editable items  #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
-I think manually checking each box individually is annoying. 
-I'd much prefer being able to glissando over them, like how
-Vjekoslav is doing in #url[this xeet, https://x.com/vkrajacic/status/2048090943358742628].
-Pretty cool! I'm sure other people (including myself) have had
-    this idea themselves in the past too, but have found themselves thinking
-    "nah, its too complicated for too little gain, and I cant be bothered installing
-    a library for this". 
-Not the case here - we're already in an animation loop, so let's just implement it:
-
-```ts - Basic skeleton - drag + toggle checkboxes #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    newTodoListItem("item 1"),
-    newTodoListItem("item 2"),
-    newTodoListItem("item 3"),
-];
-
-function newTodoListItem(name: string) {
-    return {
-        name: name,
-        done: false,
-    };
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
 }
+
+const todoList = [
+    newTodoListItem("Item 1"),
+    newTodoListItem("Item 2"),
+    newTodoListItem("Item 3"),
+]
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
 
-        // We'll need to store whether we have started a glissando or not.
-        // When prototyping, we can just use GetInline with any method we have lying around.
-        // Unlike Get, GetInline does not tie the return type of the typeId to it's own
-        // return type. Instead, it will lie to TypeScript and say it returns `undefined`
-        // all the time, so that we fall back on the type returned by `im.Set`, which
-        // is what we actually want.
-        const state = im.GetInline(c, imTodoList)
-            ?? im.Set(c, { startedGliss: false });
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-            imdom.ElBegin(c, el.DIV); {
-                const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.IsFirstRender(c)) {
-                        imdom.setAttr(c, "type", "checkbox");
-                    }
-
-                    // Because we now change the checkbox's state on press, 
-                    // we must re-drive the checkbox's checked state even when checkbox.checked 
-                    // updates again from the regular click action (mouse being released right after a press)
-                    if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
-                        checkbox.checked = item.done;
-                    }
-
-                    // I've removed the ev.INPUT event handler. 
-                    // If we find this causes accessibility problems,
-                    // we'll re-add it later.
-
-                    // We'll make use of the global event system - it has already 
-                    // added a bunch of global event handlers that rerender the 
-                    // UI in response to any events.
-                    const mouse = imdom.getMouse();
-                    const hasMouseOver = imdom.hasMouseOver(c);
-
-                    // Mouse over && started -> We can toggle
-                    if (im.Memo(c, hasMouseOver) && hasMouseOver && state.startedGliss) {
-                        item.done = !item.done;
-                    }
-
-                    // Left-mouse pressed -> We can toggle one, and start a gliss
-                    // needs to be after we process toggling before.
-                    if (imdom.hasMousePress(c) && mouse.leftMouseButton) {
-                        state.startedGliss = true;
-                        item.done = !item.done;
-                    }
-
-                    // Started gliss && no more mouse button -> stop gliss
-                    if (state.startedGliss && !mouse.leftMouseButton) {
-                        state.startedGliss = false;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                const input = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.Memo(c, item.name)) input.value = item.name;
-                    const inputEv = imdom.On(c, ev.INPUT);
-                    if (inputEv) {
-                        items[itemIdx].name = input.value;
-                    }
-                } imdom.ElEnd(c, el.INPUT);
-
-                if (im.If(c) && itemIdx > 0) {
-                    if (imButtonIsClicked(c, "up")) {
-                        [items[itemIdx - 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx - 1]];
-                    }
-                } im.IfEnd(c);
-
-
-                if (im.If(c) && itemIdx < items.length - 1){ 
-                    if (imButtonIsClicked(c, "down")) {
-                        [items[itemIdx + 1], items[itemIdx]] 
-                            = [items[itemIdx], items[itemIdx + 1]];
-                    }
-                } im.IfEnd(c);
-            } imdom.ElEnd(c, el.DIV);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            const newItem = newTodoListItem("item " + (items.length + 1));
-            items.push(newItem);
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item.name);
-            imdom.Str(c, item.done ? "[done]" : "[incomplete]");
-        } imdom.ElEnd(c, el.DIV);
+    im.For(c); for (const item of todoList) {
+        imTodoItem(c, item);
     } im.ForEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+    }
 }
 
-function imButtonIsClicked(c: ImCache, text: string): boolean {
-    let result = false;
-
-    imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            result = true;
-        }
-        imdom.Str(c, text);
-    } imdom.ElEnd(c, el.BUTTON);
-
-    return result;
-}
-
-```
-
-This kind of thing was just me typing for around 2 min. 
-It's not perfect, but it's pretty close and it was super quick and easy to implement.
-Also, the fact that I can write my list component _inline_ without a mandated
-refactoring made it easier to try out the idea.
-
-## Part 4 - code cleanup
-
-I think we've been putting it off long enough - let's extract out the list item, 
-so that it's easier to work with:
-
-```ts - Basic skeleton - code cleanup #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    newTodoListItem("item 1"),
-    newTodoListItem("item 2"),
-    newTodoListItem("item 3"),
-];
-
-function newTodoListItem(name: string) {
-    return {
-        name: name,
-        done: false,
-    };
-}
-
-function newTodoListState() {
-    return { startedGliss: false };
-}
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        // It's typical for GetInline to eventually be cleaned up to
-        // be im.State, or im.Get/im.Set when the constructor takes in arguments.
-        const state = im.State(c, newTodoListState);
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-
-            // You extract this code and call itthe same way you would
-            // for any other function.
-            imTodoListItem(c, item, itemIdx, state);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            const newItem = newTodoListItem("item " + (items.length + 1));
-            items.push(newItem);
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imTodoListItem(
-    c: ImCache,
-    item: TodoListItem,
-    itemIdx: number,
-    state: TodoListState,
-) {
-    imdom.ElBegin(c, el.DIV); {
-        const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.IsFirstRender(c)) {
-                imdom.setAttr(c, "type", "checkbox");
-            }
-
-            // Because we now change the checkbox's state on press, 
-            // we must re-drive the checkbox's checked state even when checkbox.checked 
-            // updates again from the regular click action (mouse being released right after a press)
-            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
-                checkbox.checked = item.done;
-            }
-
-            // I've removed the ev.INPUT event handler. 
-            // If we find this causes accessibility problems,
-            // we'll re-add it later.
-
-            // We'll make use of the global event system - it has already 
-            // added a bunch of global event handlers that rerender the 
-            // UI in response to any events.
-            const mouse = imdom.getMouse();
-            const hasMouseOver = imdom.hasMouseOver(c);
-
-            // Mouse over && started -> We can toggle
-            if (im.Memo(c, hasMouseOver) && hasMouseOver && state.startedGliss) {
-                item.done = !item.done;
-            }
-
-            // Left-mouse pressed -> We can toggle one, and start a gliss
-            // needs to be after we process toggling before.
-            if (imdom.hasMousePress(c) && mouse.leftMouseButton) {
-                state.startedGliss = true;
-                item.done = !item.done;
-            }
-
-            // Started gliss && no more mouse button -> stop gliss
-            if (state.startedGliss && !mouse.leftMouseButton) {
-                state.startedGliss = false;
-            }
-        } imdom.ElEnd(c, el.INPUT);
-
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
         const input = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.Memo(c, item.name)) input.value = item.name;
-            const inputEv = imdom.On(c, ev.INPUT);
-            if (inputEv) {
-                items[itemIdx].name = input.value;
-            }
-        } imdom.ElEnd(c, el.INPUT);
-
-        if (im.If(c) && itemIdx > 0) {
-            if (imButtonIsClicked(c, "up")) {
-                [items[itemIdx - 1], items[itemIdx]] 
-                    = [items[itemIdx], items[itemIdx - 1]];
-            }
-        } im.IfEnd(c);
-
-
-        if (im.If(c) && itemIdx < items.length - 1){ 
-            if (imButtonIsClicked(c, "down")) {
-                [items[itemIdx + 1], items[itemIdx]] 
-                    = [items[itemIdx], items[itemIdx + 1]];
-            }
-        } im.IfEnd(c);
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item.name);
-            imdom.Str(c, item.done ? "[done]" : "[incomplete]");
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
-    let result = false;
-
-    imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
-            result = true;
-        }
-        imdom.Str(c, text);
-    } imdom.ElEnd(c, el.BUTTON);
-
-    return result;
-}
-
-```
-
-Another thing I've been brushing over, is what happens when you move an item in the list.
-Rather than moving the DOM nodes around, only the state moves, and each item component 
-    simply rerenders to reflect the state of that index.
-We can do much better, with something called 'keyed' rendering.
-If you have used any other web framework at all, you already know what this is:
-
-```ts - Basic skeleton - Keyed rendering #diff[-1]
-import { ImCache, im, imdom, el, ev } from "imcf";
-
-const items = [
-    newTodoListItem("item 1"),
-    newTodoListItem("item 2"),
-    newTodoListItem("item 3"),
-];
-
-function newTodoListItem(name: string) {
-    return {
-        name: name,
-        done: false,
-    };
-}
-
-function newTodoListState() {
-    return { startedGliss: false };
-}
-
-function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
-
-        const state = im.State(c, newTodoListState);
-
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-
-            // We're now using keyed rendering. 
-            // If `item` changes position in the list, we will still retain all the 
-            // same state/dom nodes for that component, and render them whenever
-            // they appear. This significantly reduces churn in the `imTodoListItem` 
-            // instances that we render when we change the order of the items.
-            // Sometimes, if imTodoListItem is sufficiently simple a component,
-            // keying can be slightly less efficient, but this is not 
-            // one of those cases.
-            im.KeyedBegin(c, item); {
-                // By 'keying' this region on 'item', we've told the framework that
-                // whatever we render here should have a seperate immediate-mode entry
-                // list that we reuse specifically for the key we passed in.
-                // Anything can be used as a key, including strings, numbers, and 
-                // in this case, object references.
-                // Be careful using object references though - if they are stable, you'll be fine.
-                // If they're unstable, i.e you're refetching them from the server every 
-                // n seconds, you'll want to key on an id field instead.
-                imTodoListItem(c, item, itemIdx, state);
-            } im.KeyedEnd(c);
-        } im.ForEnd(c);
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            const newItem = newTodoListItem("item " + (items.length + 1));
-            items.push(newItem);
-        }
-    } imdom.ElEnd(c, el.DIV);
-}
-
-function imTodoListItem(
-    c: ImCache,
-    item: TodoListItem,
-    itemIdx: number,
-    state: TodoListState,
-) {
-    imdom.ElBegin(c, el.DIV); {
-        const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.IsFirstRender(c)) {
-                imdom.setAttr(c, "type", "checkbox");
-            }
-
-            // Because we now change the checkbox's state on press, 
-            // we must re-drive the checkbox's checked state even when checkbox.checked 
-            // updates again from the regular click action (mouse being released right after a press)
-            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
-                checkbox.checked = item.done;
-            }
-
-            const mouse = imdom.getMouse();
-            const hasMouseOver = imdom.hasMouseOver(c);
-            if (im.Memo(c, hasMouseOver) && hasMouseOver && state.startedGliss) {
-                item.done = !item.done;
-            }
-            if (imdom.hasMousePress(c) && mouse.leftMouseButton) {
-                state.startedGliss = true;
-                item.done = !item.done;
-            }
-            if (state.startedGliss && !mouse.leftMouseButton) {
-                state.startedGliss = false;
-            }
-        } imdom.ElEnd(c, el.INPUT);
-
-        const input = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.Memo(c, item.name)) {
+            if (im.Memo(c, item)) {
                 input.value = item.name;
             }
-
-            const inputEv = imdom.On(c, ev.INPUT);
-            if (inputEv) items[itemIdx].name = input.value;
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+            }
         } imdom.ElEnd(c, el.INPUT);
-
-        if (im.If(c) && itemIdx > 0) {
-            if (imButtonIsClicked(c, "up")) {
-                [items[itemIdx - 1], items[itemIdx]] 
-                    = [items[itemIdx], items[itemIdx - 1]];
-            }
-        } im.IfEnd(c);
-
-
-        if (im.If(c) && itemIdx < items.length - 1){ 
-            if (imButtonIsClicked(c, "down")) {
-                // This interaction has now broken.
-                [items[itemIdx + 1], items[itemIdx]] 
-                    = [items[itemIdx], items[itemIdx + 1]];
-            }
-        } im.IfEnd(c);
-    } imdom.ElEnd(c, el.DIV);
+    } imDivEnd(c);
 }
 
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item.name);
-            imdom.Str(c, item.done ? "[done]" : "[incomplete]");
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
     let result = false;
 
     imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
             result = true;
         }
-        imdom.Str(c, text);
+
+        imStr(c, buttonText);
     } imdom.ElEnd(c, el.BUTTON);
 
     return result;
 }
 
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
-The component no longer needs to be coded with the assumption that the
-    item it is bound to will change - instead, the framework will 
-    always use the same immediate-mode entry list for the same item.
+We actually have no way of knowing whether it worked or not. 
+I'll add a second readonly view of the TODO list next to it to validate this:
 
-Try clicking the up/down buttons, and you'll notice something funny. 
-"Up" works just fine. "Down", however:
+```ts - Readonly view  #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
-```text
-An error has occured at runtime:
-Error: You have already rendered to this key
-```
-
-This is a special class of error that happened because of the way we're
-    swapping our list items:
-
-```typescript
-if (imButtonIsClicked(c, "down")) {
-    // This interaction has now broken.
-    [items[itemIdx + 1], items[itemIdx]] 
-        = [items[itemIdx], items[itemIdx + 1]];
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
 }
+
+const todoList = [
+    newTodoListItem("Item 1"),
+    newTodoListItem("Item 2"),
+    newTodoListItem("Item 3"),
+]
+
+function imTodoList(c: ImCache) {
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    im.For(c); for (const item of todoList) {
+        imTodoItem(c, item);
+    } im.ForEnd(c);
+    im.For(c); for (const item of todoList) {
+        imDivBegin(c); {
+            imStr(c, item.name);
+        } imDivEnd(c);
+    } im.ForEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+    }
+}
+
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        const input = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                input.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+            }
+        } imdom.ElEnd(c, el.INPUT);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
-Basically, we have mutated the same data structure that we're currently
-    in the middle of rendering!
-In the frame where we click "down", the current item moves to the next
-    list position, and the next item moves to where we currently are. 
+Looks like editing the notes is working. 
+
+#list[
+- `im.Memo` will return a non-zero value whenever it's value is no longer `===` strict-equal to 
+    the previous value, or when the immediate-mode block has started being
+    rendered in that frame.
+    It's important to only do this when the external value changes rather than 
+        every single frame. If we do it every frame, we won't be able to select or type any text in
+        the input.
+    Though it may not always be the right choice, it is very convenient, and
+        you'll be using it whenever you want to respond to changes.
+- `imdom.On` subscribes to an event on the current DOM node
+- `ev` is an enumeration containing contant objects for all the events.
+    You can create your own objects if `ev` is not exhaustive enough.
+]
+We're using `im.Memo` to sync the input's value with the outside world when it changes,
+    and then we're setting the value directly whenever we type into it.
+
+Now I want the readonly list to be to the right of the items:
+
+```ts - Readonly list on the right  #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
+}
+
+const todoList = [
+    newTodoListItem("Item 1"),
+    newTodoListItem("Item 2"),
+    newTodoListItem("Item 3"),
+]
+
+function imTodoList(c: ImCache) {
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    imDivBegin(c); {
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "display", "flex")
+            imdom.setStyle(c, "gap", "10px")
+        }
+        imDivBegin(c); {
+            if (im.IsFirstRender(c)) {
+                imdom.setStyle(c, "flex", "1")
+            }
+            im.For(c); for (const item of todoList) {
+                imTodoItem(c, item);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); {
+            if (im.IsFirstRender(c)) {
+                imdom.setStyle(c, "flex", "1")
+            }
+            im.For(c); for (const item of todoList) {
+                imDivBegin(c); {
+                    imStr(c, item.name);
+                } imDivEnd(c);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+    } imDivEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+    }
+}
+
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        const input = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                input.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+            }
+        } imdom.ElEnd(c, el.INPUT);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+I've done this using a flex row, and two flex-1 blocks:
 
 ```
-single frame:
-    iteration 1: 
-
-    item1, <-- currently rendering item 1, but we swapped it with item2 due to clicking "down".
-    item2,
-
-    iteration 2:
-
-    item2, 
-    item1, <-- now we're rendering item 1 again
-
+=====flex-row ==========
+|  flex-1   |  flex-1  |
+=====flex-row ==========
 ```
 
-We've effectively told the framework to render the current item twice. 
-The way to avoid this class of error completely, is to never mutate the datastructure
-    you're rendering while you're rendering it. 
-This is not a new phenomenon - it's known as #url[state tearing, https://x.com/rfleury/status/2059771769234633054].
-I will keep this a hard error, since the alternatives aren't that good.
-This doesn't happen for the up button, because we've swapped the current value with the previous value,
-so the next iteration will still be for a new value.
+We've also done the style setting behind `im.IsFirstRender`. 
+Since setting CSS every frame is very expensive, all CSS setting should be done
+    behind `im.IsFirstRender` or `im.Memo` whenever possible.
 
-I've found that the simplest and most controlable way to defer this mutation, 
-    short of encoding all state mutations as command objects,
-    is by adding a 'deferred event' to your main UI's state.
-We should just do this for all mutations on the state we're rendering:
+The code is a bit ugly now. 
+We can clean it up, but there is actually a bigger problem. 
+The TODO items that I added and updated in the previous example are gone!
+I think we should start loading an saving our state from
+    #url[local storage, https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage], 
+    so that every example on this page from here-on can remain in-sync:
 
-```ts - Basic skeleton - Keyed rendering, and moving works #diff[-4]
-import { ImCache, im, imdom, el, ev } from "imcf";
+```ts - Load/save from localStorage #diff[-2]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
 
-const items = [
-    newTodoListItem("item 1"),
-    newTodoListItem("item 2"),
-    newTodoListItem("item 3"),
-];
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
+}
 
-function newTodoListItem(name: string) {
+// There are other things on this page, and we don't want to collide with them
+const STATE_KEY = "IMCF-Examples-Page--Tutorial-1-State";
+
+function loadState(): State {
+    const value = localStorage.getItem(STATE_KEY);
+    if (value) {
+        try {
+            return JSON.parse(value);
+        } catch(e) {
+            console.error("Error loading state: ", e);
+        }
+    }
+
     return {
-        name: name,
+        todoList: [
+            newTodoListItem("Item 1"),
+            newTodoListItem("Item 2"),
+            newTodoListItem("Item 3"),
+        ]
+    };
+}
+
+function saveState() {
+    const value = localStorage.setItem(STATE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+function imTodoList(c: ImCache) {
+    const { todoList } = state;
+
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    imDivBegin(c); {
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "display", "flex")
+            imdom.setStyle(c, "gap", "10px")
+        }
+        imDivBegin(c); {
+            if (im.IsFirstRender(c)) {
+                imdom.setStyle(c, "flex", "1")
+            }
+            im.For(c); for (const item of todoList) {
+                imTodoItem(c, item);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); {
+            if (im.IsFirstRender(c)) {
+                imdom.setStyle(c, "flex", "1")
+            }
+            im.For(c); for (const item of todoList) {
+                imDivBegin(c); {
+                    imStr(c, item.name);
+                } imDivEnd(c);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+    } imDivEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+        saveState();
+    }
+}
+
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        const input = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                input.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+                saveState();
+            }
+        } imdom.ElEnd(c, el.INPUT);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+Did that work? We'll only know in the next example xD. 
+I think it did. 
+Let's just move the 'row' to it's own component in this next
+example, and see if saving/loading worked:
+
+```ts - extract imRowBegin/imRowEnd #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
+}
+
+// There are other things on this page, and we don't want to collide with them
+const STATE_KEY = "IMCF-Examples-Page--Tutorial-1-State";
+
+function loadState(): State {
+    const value = localStorage.getItem(STATE_KEY);
+    if (value) {
+        try {
+            return JSON.parse(value);
+        } catch(e) {
+            console.error("Error loading state: ", e);
+        }
+    }
+
+    return {
+        todoList: [
+            newTodoListItem("Item 1"),
+            newTodoListItem("Item 2"),
+            newTodoListItem("Item 3"),
+        ]
+    };
+}
+
+function saveState() {
+    const value = localStorage.setItem(STATE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+function imTodoList(c: ImCache) {
+    const { todoList } = state;
+
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    imRowBegin(c); {
+        imDivBegin(c); imFlex1(c); {
+            im.For(c); for (const item of todoList) {
+                imTodoItem(c, item);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); imFlex1(c); {
+            im.For(c); for (const item of todoList) {
+                imDivBegin(c); {
+                    imStr(c, item.name);
+                } imDivEnd(c);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+    } imRowEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+        saveState();
+    }
+}
+
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        const input = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                input.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+                saveState();
+            }
+        } imdom.ElEnd(c, el.INPUT);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imFlex1(c: ImCache) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "flex", "1");
+    }
+}
+function imRowBegin(c: ImCache) {
+    const result = imDivBegin(c);
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "display", "flex")
+        // the flex-direction is row by default
+        imdom.setStyle(c, "gap", "10px")
+    }
+
+    return result;
+}
+const imRowEnd = imDivEnd;
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+We've extracted out our row into an `imRowBegin`/`imRowEnd` abstraction, and
+    we've also made an `imFlex1` styling thing, anticipating that we
+    will need them later. 
+You may have heard somewhere that you need to wait for 3 instances of a thing
+    before you pull it out to it's own method, but this 
+    #url[youtube video, https://www.youtube.com/watch?v=2OMRWPOSw9s] I saw
+    recently has convinced me otherwise - 1 is enough, if you think you're onto something.
+
+The loading/saving also appears to be working, but the state doesn't stay in sync between 
+    examples.
+There are a lot of ways to fix this, but I'm just going to emit a custom event
+    with the new state and the other examples can pull it in.
+
+```ts - save event #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+function newTodoListItem(name: string): TodoListItem {
+    return { name };
+}
+
+// There are other things on this page, and we don't want to collide with them
+const STATE_KEY = "IMCF-Examples-Page--Tutorial-1-State";
+
+function loadState(): State {
+    const value = localStorage.getItem(STATE_KEY);
+    if (value) {
+        try {
+            return JSON.parse(value);
+        } catch(e) {
+            console.error("Error loading state: ", e);
+        }
+    }
+
+    return {
+        todoList: [
+            newTodoListItem("Item 1"),
+            newTodoListItem("Item 2"),
+            newTodoListItem("Item 3"),
+        ]
+    };
+}
+
+function saveState() {
+    const value = localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    const stateSavedEvent = new CustomEvent("stateSaved", { detail: state })
+    document.dispatchEvent(stateSavedEvent);
+}
+
+let state = loadState();
+document.addEventListener("stateSaved", e => {
+    state = e.detail;
+})
+
+function imTodoList(c: ImCache) {
+    const { todoList } = state;
+
+    imdom.ElBegin(c, el.H3); imStr(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+
+    imRowBegin(c); {
+        imDivBegin(c); imFlex1(c); {
+            im.For(c); for (const item of todoList) {
+                imTodoItem(c, item);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); imFlex1(c); {
+            im.For(c); for (const item of todoList) {
+                imDivBegin(c); {
+                    imStr(c, item.name);
+                } imDivEnd(c);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+    } imRowEnd(c);
+
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+        saveState();
+    }
+}
+
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imDivBegin(c); {
+        const input = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                input.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = input.value;
+                saveState();
+            }
+        } imdom.ElEnd(c, el.INPUT);
+    } imDivEnd(c);
+}
+
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
+    let result = false;
+
+    imdom.ElBegin(c, el.BUTTON); {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            result = true;
+        }
+
+        imStr(c, buttonText);
+    } imdom.ElEnd(c, el.BUTTON);
+
+    return result;
+}
+
+function imFlex1(c: ImCache) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "flex", "1");
+    }
+}
+function imRowBegin(c: ImCache) {
+    const result = imDivBegin(c);
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "display", "flex")
+        // the flex-direction is row by default
+        imdom.setStyle(c, "gap", "10px")
+    }
+
+    return result;
+}
+const imRowEnd = imDivEnd;
+
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
+```
+
+As usual, we won't know if it worked till the next example. 
+In the meantime, there is one final feature our TODO list needs
+in order to be feature-complete. 
+That is, a way to complete tasks. 
+I'm thinking we just put a chechbox to the left of the items.
+A series of items next to each other, seperated by a gap? 
+Sounds a lot like that row thing we made earlier.
+
+```ts - Complete tasks #diff[-1]
+import { ImCache, Stringifyable, im, imdom, el } from "imcf";
+
+function newTodoListItem(name: string): TodoListItem {
+    return { 
+        name,
         done: false,
     };
 }
 
-function newTodoListState() {
+// There are other things on this page, and we don't want to collide with them
+const STATE_KEY = "IMCF-Examples-Page--Tutorial-1-State";
+
+function loadState(): State {
+    const value = localStorage.getItem(STATE_KEY);
+    if (value) {
+        try {
+            return JSON.parse(value);
+        } catch(e) {
+            console.error("Error loading state: ", e);
+        }
+    }
+
     return {
-        startedGliss: false,
-        deferredEvent: null, // but it could be a () => void.
+        todoList: [
+            newTodoListItem("Item 1"),
+            newTodoListItem("Item 2"),
+            newTodoListItem("Item 3"),
+        ]
     };
 }
 
+function saveState() {
+    const value = localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    const stateSavedEvent = new CustomEvent("stateSaved", { detail: state })
+    document.dispatchEvent(stateSavedEvent);
+}
+
+let state = loadState();
+document.addEventListener("stateSaved", e => {
+    state = e.detail;
+})
+
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); {
-            imdom.Str(c, "TODO List"); 
-        } imdom.ElEnd(c, el.H3); 
+    const { todoList } = state;
 
-        const state = im.State(c, newTodoListState);
+    imRowBegin(c); {
+        imDivBegin(c); imFlex1(c); {
+            imHeading(c, "TODO list");
+            im.For(c); for (const item of todoList) {
+                imTodoItem(c, item);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+        imDivBegin(c); imFlex1(c); {
+            imHeading(c, "Remaining items");
+            im.For(c); for (const item of todoList) {
+                if (item.done) continue;
+                imDivBegin(c); {
+                    imStr(c, item.name);
+                } imDivEnd(c);
+            } im.ForEnd(c);
+        } imDivEnd(c);
+    } imRowEnd(c);
 
-        im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx];
-
-            im.KeyedBegin(c, item); {
-                imTodoListItem(c, item, itemIdx, state);
-            } im.KeyedEnd(c);
-        } im.ForEnd(c);
-
-        // Run any events generated by imTodoListItem
-        // _after_ we've rendered the todo list. 
-        // Also notice how we've written it - if `event` 
-        // were to throw, we don't want state.deferredEvent to remain set,
-        // and run a second time, so we're grabbing and clearing it
-        // before we even call it.
-        let event = state.deferredEvent;
-        state.deferredEvent = null;
-        if (event) {
-            event();
-        }
-
-        imItemsDebugView(c);
-
-        if (imButtonIsClicked(c, "New item")) {
-            const newItem = newTodoListItem("item " + (items.length + 1));
-            items.push(newItem);
-        }
-    } imdom.ElEnd(c, el.DIV);
+    if (imButtonIsClicked(c, "Add item")) {
+        const name = "Item " + (todoList.length + 1);
+        todoList.push(newTodoListItem(name));
+        saveState();
+    }
 }
 
-function imTodoListItem(
-    c: ImCache,
-    item: TodoListItem,
-    itemIdx: number,
-    state: TodoListState,
-) {
-    imdom.ElBegin(c, el.DIV); {
-        const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.IsFirstRender(c)) imdom.setAttr(c, "type", "checkbox");
-
-            // Because we now change the checkbox's state on press, 
-            // we must re-drive the checkbox's checked state even when checkbox.checked 
-            // updates again from the regular click action (mouse being released right after a press)
-            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
-                checkbox.checked = item.done;
+function imTodoItem(c: ImCache, item: TodoListItem) {
+    imRowBegin(c); {
+        const doneInput = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.IsFirstRender(c)) {
+                imdom.setAttr(c, "type", "checkbox");
             }
 
-            const mouse = imdom.getMouse();
-            const hasMouseOver = imdom.hasMouseOver(c);
-            if (im.Memo(c, hasMouseOver) && hasMouseOver && state.startedGliss) item.done = !item.done;
-            if (imdom.hasMousePress(c) && mouse.leftMouseButton) {
-                state.startedGliss = true;
+            if (im.Memo(c, item)) {
+                doneInput.checked = item.done;
+            }
+
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
                 item.done = !item.done;
+                saveState();
             }
-            if (state.startedGliss && !mouse.leftMouseButton) state.startedGliss = false;
         } imdom.ElEnd(c, el.INPUT);
 
-        const input = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.Memo(c, input.name)) input.value = item.name;
-            const inputEv = imdom.On(c, ev.INPUT);
-            if (inputEv) items[itemIdx].name = input.value;
+        const nameInput = imdom.ElBegin(c, el.INPUT).root; {
+            if (im.Memo(c, item)) {
+                nameInput.value = item.name;
+            }
+            const inputEvent = imdom.On(c, ev.INPUT);
+            if (inputEvent) {
+                item.name = nameInput.value;
+                saveState();
+            }
         } imdom.ElEnd(c, el.INPUT);
-
-        if (im.If(c) && itemIdx > 0) {
-            // Even though 'up' technically isn't bugged, we should
-            // just make this the convention for all events that mutate
-            // the state we're rendering.
-            if (imButtonIsClicked(c, "up")) {
-                state.deferredEvent = () => {
-                    [items[itemIdx - 1], items[itemIdx]] 
-                        = [items[itemIdx], items[itemIdx - 1]];
-                }
-            }
-        } im.IfEnd(c);
-
-        if (im.If(c) && itemIdx < items.length - 1){ 
-            if (imButtonIsClicked(c, "down")) {
-                // This interaction should now be fixed
-                state.deferredEvent = () => {
-                    [items[itemIdx + 1], items[itemIdx]] 
-                        = [items[itemIdx], items[itemIdx + 1]];
-                }
-            }
-        } im.IfEnd(c);
-    } imdom.ElEnd(c, el.DIV);
+    } imRowEnd(c);
 }
 
-function imItemsDebugView(c: ImCache) {
-    im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-        const item = items[itemIdx];
-        imdom.ElBegin(c, el.DIV); {
-            imdom.Str(c, item.name);
-            imdom.Str(c, item.done ? "[done]" : "[incomplete]");
-        } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
-}
-
-function imButtonIsClicked(c: ImCache, text: string): boolean {
+function imButtonIsClicked(c: ImCache, buttonText: string): boolean {
     let result = false;
 
     imdom.ElBegin(c, el.BUTTON); {
-        const clickEv = imdom.On(c, ev.CLICK);
-        if (clickEv) {
+        const clickEvent = imdom.On(c, ev.CLICK);
+        if (clickEvent) {
+            clickEvent.preventDefault();
             result = true;
         }
-        imdom.Str(c, text);
+
+        imStr(c, buttonText);
     } imdom.ElEnd(c, el.BUTTON);
 
     return result;
 }
 
+function imFlex1(c: ImCache) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "flex", "1");
+    }
+}
+function imRowBegin(c: ImCache) {
+    const result = imDivBegin(c);
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "display", "flex")
+        // the flex-direction is row by default
+        imdom.setStyle(c, "gap", "10px")
+    }
+
+    return result;
+}
+const imRowEnd = imDivEnd;
+
+function imHeading(c: ImCache, text: string) {
+    imdom.ElBegin(c, el.H3); imStr(c, text); imdom.ElEnd(c, el.H3); 
+}
+function imDivBegin(c: ImCache) { return imdom.ElBegin(c, el.DIV); }
+function imDivEnd(c: ImCache) { return imdom.ElEnd(c, el.DIV); }
+function imStr(c: ImCache, val: Stringifyable) { return imdom.Str(c, val); }
 ```
 
+## Summary
 
-### The end
+That is about all the work we are going to do on this TODO list. 
+The goal was not to end up with a working TODO list that you can 
+    sell as a B2B SAAS service.
+If it were, we would be looking at deleting items, undo/redo, time tracking,
+    analytics, deploying this to the internet, etc.
 
-Congrats! You've built a todo list where you can edit the items, mark them as done/undone,
-and re-prioritise the items. 
-It doesn't look particularly nice - this was an IMCF tutorial, not a UI design one. 
-
-You've also learned exactly how the framework works, and how to use almost every feature.
-You can probably start building stuff now! 
-
-Still not sure what to do? Check out the #url[next tutorial, /?test=Tutorial+2+-+bullet+hell+game] -
-it introduces some common abstraction mechanisms you can use to build your own 
-set of primitives, and has a couple of ideas that we haven't seen in this one yet.
+Instead, you should now be familiar with:
+#list[
+- The basics of `im`, `imdom`, and how to use them to build web things
+- How to extract and reuse functionality
+- How to use `im.IsFirstRender` 
+]
