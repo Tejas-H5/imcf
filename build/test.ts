@@ -1,7 +1,8 @@
 import * as esbuild from 'esbuild'
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { fileURLToPath } from 'url';
+import url from 'node:url';
+import vm from "node:vm";
 
 const start = performance.now();
 
@@ -14,7 +15,7 @@ const start = performance.now();
 // there may be other debugging methods that are simpler that I'm missing out on,
 // which would take heavy advantage of the speed of recompilation.
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const BASE_DIR = path.join(__dirname, "../");
@@ -35,8 +36,32 @@ for await (const file of fs.glob("**/*.test.ts", {
 	entrypoints.push(file);
 }
 
+const modules: Record<string, any> = {
+	"node:path": path,
+	"node:fs/promises": fs,
+	"node:url": url,
+};
+
 function runTests(bundledJavaScript: string) {
-	return new Function(`${bundledJavaScript}`)();
+	const context = vm.createContext({ 
+		console,
+		performance,
+		setTimeout,
+		clearTimeout,
+		setInterval,
+		clearInterval,
+		require: (moduleName: string) => {
+			const m = modules[moduleName];
+			if (!m) {
+				throw new Error(`Module "${moduleName}" is not allowed in this VM context.`);
+			}
+			return m
+		}
+	});
+	context.global = context;
+	context.globalThis = context;
+
+	vm.runInContext(bundledJavaScript, context);
 }
 
 function filePathToImportPath(filepath: string): string {
@@ -59,23 +84,48 @@ const options: esbuild.BuildOptions = {
 		resolveDir: BASE_DIR,
 		loader: "ts",
 	},
-	plugins: [{
-		name: "Run tests",
-		setup(build) {
-			build.onEnd((result) => {
-				if (!result.outputFiles) {
-					return;
-				}
+	plugins: [
+		{
+			name: "Put in some constants",
+			setup(build) {
+				build.onLoad({ filter: /\.test.ts$/ }, async (args) => {
+					function escapedPath(path: string): string {
+						return path.replace(/\\/g, "\\\\");
+					}
 
-				const t0 = performance.now();
-				console.clear();
+					let contents = await fs.readFile(args.path, 'utf8');
+					const filepath = escapedPath(args.path);
+					const folder   = escapedPath(path.dirname(filepath));
 
-				runTests(result.outputFiles[0].text);
+					contents = contents.replace("__FILEPATH__", `"${filepath}"`);
+					contents = contents.replace("__FOLDER__", `"${folder}"`);
 
-				console.log("Reran all tests in " + Math.floor(performance.now() - t0) + "ms");
-			});
+					const extension = path.extname(args.path).slice(1);
+					return {
+						contents,
+						loader: extension as esbuild.Loader,
+					};
+				});
+			},
 		},
-	}],
+		{
+			name: "Run tests",
+			setup(build) {
+				build.onEnd((result) => {
+					if (!result.outputFiles) {
+						return;
+					}
+
+					const t0 = performance.now();
+					console.clear();
+
+					runTests(result.outputFiles[0].text);
+
+					console.log("Reran all tests in " + Math.floor(performance.now() - t0) + "ms");
+				});
+			},
+		}
+	],
 }
 
 if (config === "watch") {

@@ -1,15 +1,12 @@
-# How to install IMCF
+# How to install
 
 ## Install via npm
 
-<!-- This library used to be called `im-js`. But I wanted to upload it to NPM, and -->
-<!--     someone already has that as a scope.  -->
-<!-- So I had to think for multiple weeks about how to rename the package.  -->
-<!-- As you can see from `im-js`, and now `imcf`, I am apparently not very good at naming things.  -->
+I've published this as #url[imcf, https://www.npmjs.com/package/imcf] on NPM. 
 
-This is the main way to install things.
-
-TODO: upload the package.
+```
+npm install imcf
+```
 
 ## Manually vendoring
 

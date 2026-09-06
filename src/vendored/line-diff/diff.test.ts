@@ -1,7 +1,8 @@
 import * as test from "testing";
 import * as ld from "line-diff";
 
-test.file("diff.test.ts");
+const filename = __FILEPATH__;
+test.file(filename);
 
 test.group("Basic diffing", [], () => {
     // NOTE: these tests are the bare minimum. 

@@ -12,8 +12,8 @@ There are a lot of ways to do this - if you don't know how, I'd suggest
     initializing a vanilla TypeScript project with #url[Vite, https://vite.dev/guide/#scaffolding-your-first-vite-project],
     and then deleting most of the assets to get to a blank page.
 
-#url[Install the framework, /?test=How+to+install+IMCF] if you 
-    haven't already.
+#url[Install the framework, /?test=How+to+install] if you 
+    haven't already
 
 To get started, you'll need to paste this into your entrypoint:
 

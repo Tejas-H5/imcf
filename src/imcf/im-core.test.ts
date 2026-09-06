@@ -1,7 +1,8 @@
 import { im, ImCache } from "imcf";
 import * as test from "testing";
 
-test.file("im-core.test.ts");
+const filename = __FILEPATH__;
+test.file(filename);
 
 test.group("im.Get/im.Set", [] , () => {
     // The core of the frame work. If these don't work, nothing works

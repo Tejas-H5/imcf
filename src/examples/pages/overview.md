@@ -379,7 +379,7 @@ If you profile this page while the example is running, you'll find that the most
     to data-manipulations done in this framework.
 
 If the code examples haven't put you off the framework by now, then great!
-Here's how you #url[get set up, /?test=How+to+install+IMCF].
+Here's how you #url[get set up, /?test=How+to+install].
 
 I've also got tutorials on the page.
 You can see all the pages by mousing over the thing on the center-left.

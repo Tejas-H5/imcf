@@ -1,7 +1,7 @@
 {
   "name": "imcf",
   "private": false,
-  "version": "0.0.11",
+  "version": "0.0.12",
   "author": "Tejas-H5",
   "description": "An immediate-mode wrapper over the DOM. But in theory, over anything at all",
   "type": "module",
@@ -24,6 +24,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
     "domino": "^2.1.7",
     "esbuild": "^0.27.3",
+    "oxlint": "^1.81.0",
     "typescript": "^5.9.3"
   },
   "exports": {

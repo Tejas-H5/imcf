@@ -2,11 +2,9 @@ import { el, ev, im, ImCache, imdom, key } from "imcf";
 import { COL, cssVars, imui, PX } from "imcf/im-ui";
 import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visual-testing-harness";
 
-import page0 from "./pages/overview.md";
-import page1 from "./pages/installing.md";
-import page7 from "./pages/the-end.md";
-
-// Not sure where it should go yet
+import overview from "./pages/overview.md";
+import installing from "./pages/installing.md";
+import theEnd from "./pages/the-end.md";
 import tutorial0 from "./pages/tutorial-0.md";
 import tutorial1 from "./pages/tutorial-1-todo-list.md";
 import tutorial2 from "./pages/tutorial-2.md";
@@ -52,15 +50,15 @@ const modules = [
 ]
 
 const tests: VisualTest[] = [
-    newVisualTestFromBlogLang(page0, modules),
-    newVisualTestFromBlogLang(page1, modules),
+    newVisualTestFromBlogLang(overview, modules),
+    newVisualTestFromBlogLang(installing, modules),
     newVisualTestFromBlogLang(tutorial0, modules),
     newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(tutorial3, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
-    newVisualTestFromBlogLang(page7, modules),
-]
+    newVisualTestFromBlogLang(theEnd, modules),
+];
 
 if (!import.meta.env.IS_PROD) {
     tests.push(

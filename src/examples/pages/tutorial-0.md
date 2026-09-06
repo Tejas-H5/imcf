@@ -1,4 +1,4 @@
-# Tutorial 0 - Control Flow annotations
+# Tutorial 0 - Immediate Mode Control Flow annotations
 
 Our framework reuses state between renders by putting it into an immediate-mode array.
 

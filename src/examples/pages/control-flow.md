@@ -1,4 +1,4 @@
-## Why use control-flow annotations
+# Why use control-flow annotations
 
 Most immediate-mode UI libraries will allow the user to simply define the UI every frame:
 

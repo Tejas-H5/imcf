@@ -90,6 +90,7 @@ let lintingStartTime: number = 0;
 async function runTscAndGetErrors() {
 	const sb: string[] = [];
 	const sbErr: string[] = [];
+	let exitCode: number | null = 0;
 
 	if (tscProcessLast) {
 		tscProcessLast.kill();
@@ -121,6 +122,7 @@ async function runTscAndGetErrors() {
 
 	await new Promise<void>((resolve) => {
 		tscProcess.on('close', (code) => {
+			exitCode = code;
 			tscProcessLast = undefined;
 			logTrace(`child process exited with code ${code}`);
 			resolve();
@@ -133,6 +135,7 @@ async function runTscAndGetErrors() {
 
 	return {
 		killed: tscProcess.killed,
+		exitCode,
 		result: sb.join("\n"),
 		error: sbErr.join("\n")
 	};
@@ -183,11 +186,15 @@ function getDevHtmlWorkingSourcemaps() {
 if (config === "build") {
 	log("Building...");
 
-	const { result, error } = await runTscAndGetErrors();
-	if (error.length > 0 || result.length > 0) {
-		// Pipeline should fail
-		if (result) throw new Error(result);
-		throw new Error(error);
+	const { result, error, exitCode } = await runTscAndGetErrors();
+	if (exitCode !== 0) {
+		if (error.length > 0 || result.length > 0) {
+			// Pipeline should fail
+			if (result) {
+				throw new Error(result);
+			}
+			throw new Error(error);
+		}
 	}
 
 	await esbuild.build({

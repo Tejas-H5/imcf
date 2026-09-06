@@ -2,7 +2,8 @@ import * as test from "testing";
 import * as domino from "domino";
 import { im, ImCache, DomAppender, el, imdom } from "imcf";
 
-test.file("im-dom.test.ts");
+const filename = __FILEPATH__;
+test.file(filename);
 // NOTE: im is assumed correct here.
 
 type TestState = {

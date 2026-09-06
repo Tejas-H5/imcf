@@ -1,5 +1,10 @@
 import { deepEquals } from "./deep-equals.ts";
 
+// @ts-expect-error we do have node here. 
+import fs from 'node:fs/promises';
+// @ts-expect-error we do have node here. 
+import path from 'node:path';
+
 // testing.ts v0.0.0
 
 export type Result = {
@@ -13,7 +18,7 @@ export type Result = {
 	checks: number; 
 	time: number;
 
-	fn: ((r: Result) => void);
+	fn: ((r: Result) => void | Promise<void>);
 }
 
 export type Group = {
@@ -134,7 +139,7 @@ export function failure(r: Result, message: string, optMessage?: string) {
 	r.fails.push(message);
 }
 
-export function add(name: string, fn: ((r: Result) => void), g?: Group) {
+export function add(name: string, fn: ((r: Result) => void | Promise<void>), g?: Group) {
 	if (!g) g = groups[groups.length - 1];
 
 	if (!g.tests) {
@@ -147,14 +152,8 @@ export function add(name: string, fn: ((r: Result) => void), g?: Group) {
 		checks: 0,
 		time: 0,
 		fn,
-		// easier to grep than a boolean flag, and it works well with table-driven testing too since I can add [deb
-		// ug] to the name directly. this allows me to build abstractions like
-		// addAllTestCases(r, [ 
-		//		{ name: "[deb" + "ug] blah", case: ..., expected: ... },
-		// ])
-		// Importantly, we don't run any other tests when you've selected some tests for debug.
-		// That way, console-logs and breakpoints are guaranteed to be useful.
-		// We do a bit of obfuscation here, so that your grep doesn't hit this implementation.
+		// NOTE: this doc intentionally obfuscates the debug string so that a grep 
+		//	for '[' followed by 'deb'ug' won't hit here.
 		isDebugging: name.startsWith("[de" + "bug]"), 
 	};
 
@@ -211,12 +210,64 @@ export function group(name: string, _tryingToCover: unknown[], registerFn: () =>
 const t = newTestingContext();
 const groups: Group[] = [];
 
+// TODO: figure out if there's a way for us to just figure out what the file is
+// without needing to specify this.
+// For now you can just pass in __FILEPATH__ in all the tests.
 export function file(name: string, _coveringSymbols: any = null) {
 	groups.length = 0;
 	pushGroup(name);
 }
 
-export function runAll(isCi: boolean): Context {
+type DirectoryContents = {
+	files:   string[];
+	folders: string[];
+}
+
+export async function listDirectoryContents(
+	t: Result,
+	cwd: string, // We cant infer this sadly. 
+	filepath: string
+): Promise<DirectoryContents> {
+	const resolved = path.join(cwd, filepath);
+
+	try {
+		const items = await fs.readdir(resolved, { withFileTypes: true });
+
+		const files: string[] = [];
+		const folders: string[] = [];
+
+		for (const item of items) {
+			try {
+				if (item.isDirectory()) {
+					folders.push(path.join(resolved, item.name));
+				}
+			} catch (e) {
+				failure(t, "Couldn't check if directory: " + e)
+				throw e;
+			}
+
+			try {
+				if (item.isFile()) {
+					files.push(path.join(resolved, item.name));
+				}
+			} catch (e) {
+				failure(t, "Couldn't check if file: " + e)
+				throw e;
+			}
+		}
+
+		return { files, folders };
+	} catch(e) {
+		failure(t, "Couldn't read directory: " + e)
+		throw e;
+	}
+}
+
+export async function readFile(t: Result, filepath: string): Promise<string> {
+	return fs.readFile(filepath, { encoding: "utf-8" });
+}
+
+export async function runAll(isCi: boolean): Promise<Context> {
 	let hasDebugTests = false;
 	if (!isCi) {
 		// Disable isolating specific tests for debug in a CI environment.
@@ -245,7 +296,7 @@ export function runAll(isCi: boolean): Context {
 		}
 	}
 
-	const result = runAllInternal(t.groups, hasDebugTests);
+	const result = await runAllInternal(t.groups, hasDebugTests);
 
 	{
 		const recomputeResultAggregateStats = (g: Group) => {
@@ -284,7 +335,7 @@ export function anyFails(result: Context): boolean {
 	return false;
 }
 
-function runAllInternal(groups: Group[], debugOnly: boolean): Context {
+async function runAllInternal(groups: Group[], debugOnly: boolean): Promise<Context> {
 	for (const group of groups) {
 		if (!group.tests && !group.subgroups) {
 			add("This group didn't have any tests", r => {
@@ -303,7 +354,7 @@ function runAllInternal(groups: Group[], debugOnly: boolean): Context {
 
 				const t0 = performance.now();
 				try {
-					test.fn(test);
+					await test.fn(test);
 				} catch(e) {
 					failure(test, "Runtime error: " + e);
 				}
@@ -316,7 +367,7 @@ function runAllInternal(groups: Group[], debugOnly: boolean): Context {
 		}
 
 		if (group.subgroups) {
-			runAllInternal(group.subgroups, debugOnly);
+			await runAllInternal(group.subgroups, debugOnly);
 		}
 	}
 
@@ -394,10 +445,6 @@ export function printResultsInternal(g: Group, depth: number, mode: number) {
 			}
 		}
 	}
-}
-
-type Accumulator = {
-	failingTests: number;
 }
 
 export function printResults(results: Context) {

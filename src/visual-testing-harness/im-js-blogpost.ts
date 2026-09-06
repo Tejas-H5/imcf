@@ -1,6 +1,6 @@
 import * as bl from "blog-lang";
 import { ev, im, ImCache, ImCacheRerenderFn, imdom } from "imcf";
-import { BLOCK, COL, imui } from "imcf/im-ui";
+import { BLOCK, imui } from "imcf/im-ui";
 import {
     BlogLangRenderOptions,
     imItemUrlBegin,
