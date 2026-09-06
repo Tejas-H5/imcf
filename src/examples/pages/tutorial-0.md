@@ -1,98 +1,61 @@
-# Tutorial 0 - Immediate Mode Control Flow annotations
+# Tutorial 0 - Control Flow annotations
 
-This page explains the fundamentals of this framework.
-You'll have to read it begining-to-end to understand most of the code/examples (sorry).
-
-## What is the `ImCache`
-
-Every IMCF function appears to have `c: ImCache` as it's first argument.
-This is where we persist state between renders.
-It's really just a stack of immediate-mode blocks:
+Our framework reuses state between renders by putting it into an immediate-mode array.
 
 ```
-[item 1, item 2, item 3, item 4, .....] // root block
-...
-[item 1, item 2, item 3, item 4, .....]
-[item 1, item 2, item 3, item 4, .....] <- current immediate-mode block
+item 1 | item 2 | item 3 | item 4 | ............
+^-- The current state index
 ```
 
-An immediate-mode block is just an array of state.
+All functions named `imBlah(c: ImCache, ...)` will eventually 
+    get/set state in the array by calling `im.Get` and `im.Set`.
 
-Every single item in a block is queried/stored using the `im.Get` and `im.Set` methods. 
-An index is reset to -1 when a block opens.
-Calling `im.Get` increments that index, then returns the state at that index.
-Calling `im.Set` sets any state at the current index.
-Blocks other than the root block are actually stored in their parent block 
-    using `im.Get` and `im.Set`.
+#list[
+- `im.Get` will increment the 'current state index', then return the state that 
+    was saved there
+- `im.Set` will overwrite whatever state is at the current index
+]
 
 ```
-function imThing(c: ImCache) {
-    let stateItem = im.Get(c, constructorFn);
-    if (!stateItem) {
-        stateItem = im.Set(c, constructorFn());
+function imExample(c: ImCache) {
+    const domNode = im.Get(c, document.createElement);
+    if (!domNode) {
+        domNode = im.Set(c, document.createElement("div"));
     }
     ...
 }
 ```
+This won't work if calls to `im.Get` are behind if-statements or for-loop iterations. 
+If an if-statement becomes `true` or a for-loop starts iterating more items
+    the next render, subsequent calls to `im.Get` will be referring to the wrong state.
+You'll notice that `im.Get(c, typeId)` takes two parameters. 
+It will not actually invoke your constructor function - rather, we use this to check
+    for these misalignments and throw an error.
 
-The current immediate-mode block may look something like this:
+Does this mean we can't use control-flow in our programs?
 
-```
-behind the array ==============| <- immediate-mode state index start
-item 1: Dom node               | <- im.Get() call 1
-item 2: Dom node               | <- im.Get() call 2
-item 3: Some component state   | <- im.Get() call 3
-item 4: Dom node               | <- im.Get() call 4
-item 5: im.For block           | <- im.Get() call 5
-item 6: Dom node               | <- im.Get() call 6
-item 7: im.If branch block     | <- im.Get() call 7
-item 8: im.If branch block     | <- im.Get() call 8
-... more items ...             | so on and so forth
-```
+## Control-Flow annotations
 
-You'll notice that `im.Get(c, typeId)` takes 2 arguments. 
-This is because the real immediate-mode block array looks a bit more like this:
+The way to get around this is by getting/setting another immediate-mode array inside the
+    previous one whenever we arrive at control-flow, like conditional rendering or loops. 
+The `ImCache` is actually just a stack of immediate-mode arrays:
 
 ```
-item 1 typeId
-item 1 value
-item 2 typeId
-item 2 value
-item 3 typeId
-item 3 value
-... more items ...
+- immediate-mode array 0 ------------------------------
+[items.....] 
+DOM node | DOM node | user state | for-loop | other state from previous render...
+                                 ^--- idx
+- for-loop --------------------------------------------
+[items.....] 
+DOM node | if-true-branch | if-false-branch | other state from previous render...
+                          ^--- idx
+- if-false-branch -------------------------------------
+DOM node | other state from previous render...
+^--- idx
 ```
 
-This allows us to provide a runtime assertion that catches misaligned gets between renders.
-We're still screwed if 2 items of the same type of state are next to each other though,
-    so we've got another assertion checking for a change in the number of items rendered.
-
-<!-- As for why the typeId is a function - I didn't want to be minting a bunch of unique -->
-<!--     integers all over the place.  -->
-<!-- And I found that I almost always had a function in the current scope that I could -->
-<!--     use to uniquely identify some piece of state. -->
-<!-- The typeId's return type doesn't even need to match the state it is associated with -  -->
-<!--     since it is only used to catch misaligned gets between renders, all that  -->
-<!--     matters is that they are probably different to the typeIds before and after them. -->
-
-## The rules of Immediate-Mode Control-Flow
-
-For the code that queries the state actually work:
-
-#list[
-- Every render must get/set the items in the same order
-- Every render must get/set the same number of items unless you're in an `im.For` block
-]
-
-In order to know which methods query/store immediate-mode at a glance, they 
-    should start with `im`, i.e `imName`. 
-If they are already on a namespace prefixed with `im`, then they should start with
-    a capital letter like `imthing.Name`.
-
-Getting/setting the same number of items every render sounds overly restrictive at first.
-How will we use if-statements? For-loops?
-Turns out that we can use control-flow AND abide by the rules of IMCF using 
-    'control-flow annotations':
+We've turned 0-n state entries into 1 state entry pointing to another array.
+We tell the framework to do this by using control-flow annotations.
 
 #list[
 - Use `im.If`/`im.IfElse`/`im.IfEnd` for if-statements:
@@ -185,34 +148,10 @@ function imMain(c: ImCache) {
 ```
 ]
 
-Control-flow annotations work, because they replace a variable number of 
-    immediate-mode state with 1 immediate-mode block that may or may not render items.
+You should remember to use control-flow annotations if you need to do 
+    conditional or list-based rendering of immediate-mode state.
 
-In fact - only control-flow annotations will push new immediate-mode blocks to the stack.
-Code like this:
-
-```
-imDivBegin(c); {
-    // New block ? Actually no
-} imDivEnd(c);
-```
-
-Might look like it's creating a new block but it isn't, because setting the 'parent' 
-    item for a particular point in time ends up being completely orthogonal to whether 
-    or not the number of items we're storing in the block is constant or not.
-
-## In summary
-
-#list[
-- `ImCache` stores all the state between frames. Due to the way it works:
-    #list[
-    - Every render must get/set the items in the same order
-    - Every render must get/set the same number of items unless you're in an `im.For` block
-    ]
-- if-statements, for-loops, switches, and try-catch statements contradict these rules
-- those same control-flow constructs paired with their corresponding control-flow annotations
-    do _not_ contradict these rules
-]
+## Done
 
 Read this page to the end?
 Congratulations - your IQ just increased by 10 points!

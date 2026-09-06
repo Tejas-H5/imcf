@@ -15,7 +15,7 @@ This time, I'm going to start by having refactored out my styling system immedia
 
 ```ts - Basic outline
 function imKanbanBoard(c: ImCache) {
-    imRowBegin(c: ImCache); {
+    imRowBegin(c); {
         imColBegin(c); {
             imHeadingBegin(c); imStr(c, "Todo"); imHeadingEnd(c);
         } imColEnd(c);
@@ -68,7 +68,6 @@ function imRowBegin(c: ImCache) {
 function imRowEnd(c: ImCache) {
     imdom.ElEnd(c, el.DIV);
 }
-
 ```
 
 Let's add some tasks into each row, and see how that looks:
