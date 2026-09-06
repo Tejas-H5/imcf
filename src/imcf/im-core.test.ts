@@ -51,7 +51,7 @@ test.group("im.Get/im.Set", [] , () => {
             im.CacheBegin(c); {
                 im.Get(c, Array);
             } im.CacheEnd(c);
-        }, "Expected to populate this cache entry with type=Object, but got Array . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state");
+        }, "Expected to populate this cache entry with type=Object, but got Array . " + im.CONDITIONAL_RENDERING_ERROR_MESSAGE);
     });
 
     test.add("It throws if we try to get the next state without setting the previous state", r => {

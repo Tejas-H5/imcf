@@ -15,10 +15,8 @@
     "url": "https://github.com/Tejas-H5/imjs.git"
   },
   "keywords": [
-    "immediate-mode-cache",
-    "immediate mode",
-    "immediate mode layer",
-    "immediate mode UI"
+    "immediate-mode",
+    "immediate-mode control-flow"
   ],
   "licence": "MIT",
   "devDependencies": {
