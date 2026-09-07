@@ -391,7 +391,7 @@ The rest can be skipped.
 Other than all the stuff I make for myself (mostly unremarkable and unknown stuff for now),
     there are no production users. 
 We are venturing off the beaten path.
-Raise issues on #url[this GitHub repository, https://github.com/Tejas-H5/imjs] as needed.
+Raise issues on #url[this GitHub repository, https://github.com/Tejas-H5/imcf] as needed.
 
 ## Is it still work trying this UI framework now that AI can oneshot any React component?
 

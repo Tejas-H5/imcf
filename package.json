@@ -1,7 +1,7 @@
 {
   "name": "imcf",
   "private": false,
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "Tejas-H5",
   "description": "An immediate-mode wrapper over the DOM. But in theory, over anything at all",
   "type": "module",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tejas-H5/imjs.git"
+    "url": "https://github.com/Tejas-H5/imcf.git"
   },
   "keywords": [
     "immediate-mode",

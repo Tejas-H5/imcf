@@ -2743,7 +2743,7 @@ You also saw some new ways to abstract code:
 ]
 
 Still not sure what to do?
-Maybe these tutorials aren't any good - submit an issue #url[here, https://github.com/Tejas-H5/imjs]
+Maybe these tutorials aren't any good - submit an issue #url[here, https://github.com/Tejas-H5/imcf]
     saying as such. 
 In the meantime, check out #url[Tutorial 3, /?test=Tutorial+3+-+kanban+board].
 We build something 'useful' for once.

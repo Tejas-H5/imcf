@@ -1,4 +1,4 @@
-# Immediate Mode Control-Flow (Check it out [here](https://tejas-h5.github.io/imjs/))
+# Immediate Mode Control-Flow (Check it out [here](https://tejas-h5.github.io/imcf/))
 
 The Immediate Mode Control-Flow (`imcf`) framework provides a thin immediate-mode 
     layer over the DOM. 
@@ -8,13 +8,13 @@ Most immediate-mode frameworks opt to use IDs or keys to allow the framework to
     identify the same element between frames, but I've opted for a control-flow 
     annotation approach instead.
 
-[![Test, build, deploy](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
+[![Test, build, deploy](https://github.com/Tejas-H5/imcf/actions/workflows/github-workflows.yaml/badge.svg?branch=main)](https://github.com/Tejas-H5/imjs/actions/workflows/github-workflows.yaml)
 
 `imcf` sits between the DOM and your code to rerender your UI at your monitor's 
     refresh-rate with `requestAnimationFrame`!
 
 Surprisingly, it works, and it's simpler than you might think.
-[This page](https://tejas-h5.github.io/imjs/) explains the framework in detail, 
+[This page](https://tejas-h5.github.io/imcf/) explains the framework in detail, 
     and provides lots of example code and tutorials for how to use it.
 
 ```ts

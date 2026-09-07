@@ -10,7 +10,7 @@ npm install imcf
 
 ## Manually vendoring
 
-Copy the folders you need from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]
+Copy the folders you need from #url[this GitHub repository, https://github.com/Tejas-H5/imcf]
     into your project.
 
 ```
