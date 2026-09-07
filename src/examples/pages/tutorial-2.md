@@ -175,11 +175,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 {
-                    // This is how you access the global event system's keyboard state,
-                    // where we track the curent keyboard state. 
-                    // It's very useful to have.
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -191,7 +186,10 @@ function imGame(c: ImCache) {
                     // I've added this to prevent up/down arrows from scrolling the webpage,
                     // but other hotkeys still need to work.
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     // Let's apply the movement in a framerate-independent way with delta-time.
@@ -277,8 +275,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -288,7 +284,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     // Let's apply the movement in a framerate-independent way with delta-time.
@@ -398,8 +397,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -409,7 +406,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     // Let's apply the movement in a framerate-independent way with delta-time.
@@ -614,8 +614,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -625,7 +623,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     // Instead of incrementing player position directly, we can 
@@ -789,8 +790,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 if (player) {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -800,7 +799,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     const movementSpeed = 1000;
@@ -980,8 +982,7 @@ function imGame(c: ImCache) {
 
                         imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
                         // The key-binding can be self-evident by colocating it with the UI
-                        const keyboard = imdom.getKeyboard();
-                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                        if (imdom.isKeyPressed(key.C)) {
                             player.dead = false;
                             game.playerInvincibleTimer = 1;
                         }
@@ -990,8 +991,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 if (player) {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -1001,7 +1000,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     const movementSpeed = 1000;
@@ -1217,8 +1219,7 @@ function imGame(c: ImCache) {
                         imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
                         imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
-                        const keyboard = imdom.getKeyboard();
-                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                        if (imdom.isKeyPressed(key.C)) {
                             player.dead = false;
                             game.playerInvincibleTimer = 1;
                         }
@@ -1227,8 +1228,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 if (player) {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -1238,7 +1237,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     const movementSpeed = 1000;
@@ -1486,9 +1488,10 @@ function imGame(c: ImCache) {
                         if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
                         imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
-                        imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
-                        const keyboard = imdom.getKeyboard();
-                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                        imDivBegin(c); {
+                            imStr(c, "C to continue");
+                        } imDivEnd(c);
+                        if (imdom.isKeyPressed(key.C)) {
                             player.dead = false;
                             game.playerInvincibleTimer = 1;
                         }
@@ -1497,8 +1500,6 @@ function imGame(c: ImCache) {
 
                 // Player movement
                 if (player) {
-                    const keyboard = imdom.getKeyboard();
-
                     const xAxis = 
                         imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -1508,7 +1509,10 @@ function imGame(c: ImCache) {
                         imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
                     if (xAxis || yAxis) {
-                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) {
+                            keyboard.keyDown.preventDefault();
+                        }
                     }
 
                     const movementSpeed = 1000;
@@ -1813,8 +1817,7 @@ function imGameInner(c: ImCache, root: HTMLElement) {
             imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
             imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
-            const keyboard = imdom.getKeyboard();
-            if (imdom.isKeyPressed(keyboard, key.C)) {
+            if (imdom.isKeyPressed(key.C)) {
                 player.dead = false;
                 game.playerInvincibleTimer = 1;
             }
@@ -1823,8 +1826,6 @@ function imGameInner(c: ImCache, root: HTMLElement) {
 
     // Player movement
     if (player) {
-        const keyboard = imdom.getKeyboard();
-
         const xAxis = 
             imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
             imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -1834,7 +1835,10 @@ function imGameInner(c: ImCache, root: HTMLElement) {
             imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
-            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+            const keyboard = imdom.getKeyboard();
+            if (keyboard.keyDown) {
+                keyboard.keyDown.preventDefault();
+            }
         }
 
         const movementSpeed = 1000;
@@ -2139,8 +2143,7 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
             imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
             imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
-            const keyboard = imdom.getKeyboard();
-            if (imdom.isKeyPressed(keyboard, key.C)) {
+            if (imdom.isKeyPressed(key.C)) {
                 player.dead = false;
                 game.playerInvincibleTimer = 1;
             }
@@ -2149,8 +2152,6 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
 
     // Player movement
     if (player) {
-        const keyboard = imdom.getKeyboard();
-
         const xAxis = 
             imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
             imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -2160,7 +2161,10 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
             imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
-            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+            const keyboard = imdom.getKeyboard();
+            if (keyboard.keyDown) {
+                keyboard.keyDown.preventDefault();
+            }
         }
 
         const movementSpeed = 1000;
@@ -2479,8 +2483,7 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
             imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
             imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
-            const keyboard = imdom.getKeyboard();
-            if (imdom.isKeyPressed(keyboard, key.C)) {
+            if (imdom.isKeyPressed(key.C)) {
                 player.dead = false;
                 game.playerInvincibleTimer = 1;
             }
@@ -2489,8 +2492,6 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
 
     // Player movement
     if (player) {
-        const keyboard = imdom.getKeyboard();
-
         const xAxis = 
             imdom.isKeyHeld(key.ARROW_LEFT) ? -1 :
             imdom.isKeyHeld(key.ARROW_RIGHT) ? 1 : 0;
@@ -2500,7 +2501,10 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
             imdom.isKeyHeld(key.ARROW_DOWN) ? 1 : 0;
 
         if (xAxis || yAxis) {
-            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+            const keyboard = imdom.getKeyboard();
+            if (keyboard.keyDown) {
+                keyboard.keyDown.preventDefault();
+            }
         }
 
         const movementSpeed = 1000;

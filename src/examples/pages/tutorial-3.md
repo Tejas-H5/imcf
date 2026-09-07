@@ -2517,6 +2517,9 @@ There's even more features that can be added:
 ]
 
 I'll leave this as an exercise to the reader.
+If only we had some sort of task tracking system we could use 
+    to know where we were at with our tasks...
+(I personally would recommend just a .txt file with a dotpoint for each task)
 
 Want to know how to do a particular thing?
 Send them through #url[here, https://github.com/Tejas-H5/imjs].
