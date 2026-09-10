@@ -1,7 +1,7 @@
 {
   "name": "imcf",
   "private": false,
-  "version": "0.0.13",
+  "version": "0.0.14",
   "author": "Tejas-H5",
   "description": "An immediate-mode wrapper over the DOM. But in theory, over anything at all",
   "type": "module",
@@ -18,7 +18,7 @@
     "immediate-mode",
     "immediate-mode control-flow"
   ],
-  "licence": "MIT",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^25.3.2",
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
