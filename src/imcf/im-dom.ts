@@ -608,9 +608,7 @@ function hasMouseOver(c: ImCache, el = getCurrentElement(c)): boolean {
 }
 
 function elIsInSetThisFrame(el: ValidElement, set: Set<ValidElement>) {
-    const result = set.has(el);
-    set.delete(el);
-    return result;
+    return set.has(el);
 }
 
 export type SizeState = {
@@ -891,6 +889,13 @@ function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
         state = im.Set(c, eventSystem);
         globalEventSystem = state;
     }
+
+    state.mouse.mouseDownElements.clear();
+    state.mouse.mouseUpElements.clear();
+    state.mouse.mouseClickElements.clear();
+    state.mouse.mouseDoubleClickElements.clear();
+    state.mouse.mouseOverElements.clear();
+    state.mouse.lastMouseOverElement = null;
 
     return state;
 }

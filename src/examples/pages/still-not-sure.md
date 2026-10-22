@@ -14,9 +14,8 @@ Some existing projects to get you thinking:
 - #url[Pl2, https://github.com/Tejas-H5/pl2] - my third attempt at a programming language entirely in the browser.
     The #url[second attempt, https://github.com/Tejas-H5/prototyping-lang] was also done with this framework.
 - A realtime intelligence platform - I haven't made it yet, but I've always wanted to make a tool 
-    that can collect information from various realtime news-feeds, aggregate them, and then expose a cool-looking frontend UI for them.
-    I think I can do a lot better than world-monitor.
-    This time, I'll need to provision a cloud :)
+    that can collect information from various realtime news-feeds, aggregate them, and then expose a 
+    cool-looking frontend UI for them.
 ]
 
 Right now it's mostly my own stuff, but I'll add more projects as I naturally stumble into them and think
@@ -48,8 +47,8 @@ It was particularly important to me that I can download the entire file as a sin
 I simply can't be bothered spinning up a backend server and setting up a domain - even this documentation page 
     is hosted on github-pages and not a real server.
 
-If you do decide to start building stuff, the only advice I can give, is to use a "peer dependencies" structure for the
-    stuff you write yourself.
+If you do decide to start building stuff, the only advice I can give is to use a "peer dependencies" 
+    structure for the stuff you write yourself.
 This just the notion that a package can always be imported from a fixed absolute path, like `import from "imcf"` or
     `import blah from "blog-lang"` - it is not npm or package-manager specific.
 You then structure your project like:
@@ -68,5 +67,5 @@ app-dir/
         other-other-file.ts
 ```
 
-You can now copy-paste and reuse entire libraries between your stuff.
-
+You can now copy-paste and reuse entire libraries between your stuff without having
+    to build packages.
