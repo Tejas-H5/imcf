@@ -1,5 +1,5 @@
 import { imdom, im, ImCache, el, ev } from "imcf";
-import { cssVars, imui } from "imcf/im-ui";
+import { cssVars, imOnBlur, imui } from "imcf/im-ui";
 import { imTextAreaBegin, imTextAreaEnd } from "./editable-text-area";
 
 const cssb = imui.newCssBuilder();
@@ -79,7 +79,7 @@ export function imTextInputOneLine(
         }
 
         const inputEvent = imdom.On(c, ev.INPUT);
-        const blur       = imdom.On(c, ev.BLUR);
+        const blur       = imOnBlur(c, input);
         const keyboard   = imdom.getKeyboard();
 
         let lineEnding: string | undefined;

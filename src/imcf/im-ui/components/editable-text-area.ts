@@ -1,5 +1,5 @@
 import { el, ev, im, ImCache, imdom } from "imcf";
-import { BLOCK, cssVars, FIT_CONTENT, imui, INLINE, PERCENT, setInputValue } from "imcf/im-ui";
+import { BLOCK, cssVars, FIT_CONTENT, imOnBlur, imui, INLINE, PERCENT, setInputValue } from "imcf/im-ui";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);
@@ -77,7 +77,7 @@ export function imHandleTextAreaEvent(c: ImCache, textArea: HTMLTextAreaElement)
 	result = { newText: text };
     }
 
-    const blur = imdom.On(c, ev.BLUR);
+    const blur = imOnBlur(c, textArea);
     if (blur) {
 	result = { blur: true };
     }

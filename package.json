@@ -1,7 +1,7 @@
 {
   "name": "imcf",
   "private": false,
-  "version": "0.0.14",
+  "version": "0.0.15",
   "author": "Tejas-H5",
   "description": "An immediate-mode wrapper over the DOM. But in theory, over anything at all",
   "type": "module",
