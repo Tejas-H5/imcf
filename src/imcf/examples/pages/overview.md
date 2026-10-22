@@ -41,7 +41,7 @@ Most stateful Immediate-mode GUI libraries will let you give each 'node' in the 
 There are three main things I want my immediate-mode system to support:
 #list[
 - Arbitrary state retained between renders inside the tree
-- The ability to reuse every single DOM-nodes no matter what, so that we can always
+- The ability to reuse every single DOM-node no matter what, so that we can always
     rerender our UIs at 60FPS+ 
 - I do NOT want to give every single div and span in my program a unique 'identifier'.
 ]
@@ -105,15 +105,16 @@ function imDateTime(c: ImCache, dateTime: Date) {
 
 Note that the `imDivBegin`, `imSpanBegin` and `imStr` methods aren't included - 
     you'll have to make them yourself, but it is fairly easy to do so.
-The difference between the React version and the IMCF version is that the imcf
-    version can be rerendered at 60fps in an animation loop, because it allocates
-    far less memory every frame, and 'reconciliation' is dead simple - 
+The difference between the React version and the IMCF version is that the while 
+    it is somewhat less visually pleasing code to type, the imcf
+    version can be rerendered at 60fps in an animation loop because it allocates
+    far less memory every frame and 'reconciliation' is dead simple - 
     every code path is actually being explicit about which DOM nodes it wants to 
-    retain, so the reconciler has FAR less guesswork to do.
+    retain, so we don't need to diff entire trees at all - the diff
+    can be done in-place in an imperative way.
 
 ## Examples
 
-The code reads a lot like if a React functional component were imperatively rendered.
 The render method will always be _synchronous_ (non-`async`), and it will rerender the entire UI from
     top to bottom in a single pass:
 
@@ -139,12 +140,12 @@ function imDateTime(c: ImCache, dateTime: Date) {
     imDivBegin(c); {
         imDivBegin(c); {
             if (im.If(c) && hours < 12) {
-                imSpanBegin(c); imStr(c, "Good morning"); imSpanEnd(c);
+                imSpanBegin(c); imStr(c, "Good morning!"); imSpanEnd(c);
             } else if (im.ElseIf(c) && hours < 6) {
                 imSpanBegin(c); imStr(c, "Good afternoon!"); imSpanEnd(c);
             } else {
                 im.Else(c);
-                imSpanBegin(c); imStr(c, "Good evening"); imSpanEnd(c);
+                imSpanBegin(c); imStr(c, "Good evening!"); imSpanEnd(c);
             } im.IfEnd(c);
         } imDivEnd(c);
         imDivBegin(c); {
@@ -176,13 +177,14 @@ I have found that a lot of other benefits fall out of the usage code being way t
 - UI can coordinate with each other accross the entire app in a deterministic manner via global
     or global-ish state objects
 - Bespoke interactions/animations/UI become a lot easier and lower-friction to introduce.
-    Whare the thought process was previously "that idea is too insane to implement
+    Where the thought process was previously "that idea is too insane to implement
     and adds too much architectural overhead let's not bother" to
     "We're already in an animation loop, let's make use of it :D"
 - The render pass can be breakpointed and stepped through
-- Hitting a breakpoint and inspecting the callstack will showed you where in the 
-    component heirarchy you are
-- The browser's profiler output will actually be useful
+- Hitting a breakpoint and inspecting the callstack will actually show you which component
+    you are in
+- The clarity of the callstack also makes the browser's profiler output far more 
+    readable and useful
 ]
 
 It's not all sunshine and rainbows:
