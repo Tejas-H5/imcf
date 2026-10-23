@@ -890,13 +890,6 @@ function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
         globalEventSystem = state;
     }
 
-    state.mouse.mouseDownElements.clear();
-    state.mouse.mouseUpElements.clear();
-    state.mouse.mouseClickElements.clear();
-    state.mouse.mouseDoubleClickElements.clear();
-    state.mouse.mouseOverElements.clear();
-    state.mouse.lastMouseOverElement = null;
-
     return state;
 }
 
