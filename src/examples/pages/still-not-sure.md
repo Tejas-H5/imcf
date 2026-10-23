@@ -13,6 +13,17 @@ Some existing projects to get you thinking:
     just the features I use, and nothing else
 - #url[Pl2, https://github.com/Tejas-H5/pl2] - my third attempt at a programming language entirely in the browser.
     The #url[second attempt, https://github.com/Tejas-H5/prototyping-lang] was also done with this framework.
+- An agentic harness orchestrator - This is extremely useful to build, if you have a lot of tokens to spend and
+    you aren't even really sure what to do with them. 
+    For example, if you have a claude subscription and you have 40% left, not spending them on something would be a waste.
+    I think every person with the priveallege to be in such a position should try this out once, using any framework really, 
+        just to have the experience. 
+    Although I wrote this framework to optimize my own human productivity (I still don't use agents to develop my personal projects, yet), 
+        they can use this one quite well apparently.
+    You may still have to point them at the repo to read the tutorials, and also tell them to avoid doing memory allocations 
+        in the render path, and put in the simple fps counter component somewhere so you can notice any performance regressions.
+    (Do note it is better to make a _meta harness_, i.e a harness that is backed by another harness like claude CLI or codex CLI since
+        they can make use of subscription pricing instead of API pricing, as of October 2026).
 - A realtime intelligence platform - I haven't made it yet, but I've always wanted to make a tool 
     that can collect information from various realtime news-feeds, aggregate them, and then expose a 
     cool-looking frontend UI for them.
