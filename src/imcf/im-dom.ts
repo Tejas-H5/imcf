@@ -54,17 +54,12 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     // Also will be needed for 3rd party lib integrations.
     manualDom: boolean;
 
-    idx: number;     // Used to iterate the list
-
-    // if null, root is a text node. else, it can be appended to.
-    parent: DomAppender<ValidElement> | null;
     domRoot: DomAppender<ValidElement> | null;
-    children: (DomAppender<AppendableElement>[] | null);
-    selfIdx: number; // index of this node in it's own array
+    // Text nodes, for example, cannot be appended to.
+    isAppendable: boolean; 
+    nextChild: AppendableElement | null;
 
-    isFirstishRender: boolean;
-
-    // if true, the final pass can ignore this.
+    // if FINALIZE_IMMEDIATELY, the final pass can ignore this.
     finalizeType: FinalizationType; 
 
     // Dedicated finalization list instead of recursing through every element at the end.
@@ -76,20 +71,16 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
 function newDomAppender<E extends AppendableElement>(
     root: E,
     domRoot: DomAppender<ValidElement> | null,
-    children: (DomAppender<any>[] | null)
+    appendable: boolean,
 ): DomAppender<E> {
     return {
         root,
         keyRef: null,
-        idx: -1,
 
-        parent: null,
-        children,
-        selfIdx: 0,
+        isAppendable: appendable,
+        nextChild: null,
         manualDom: false,
         finalizeType: FINALIZE_IMMEDIATELY,
-
-        isFirstishRender: true,
 
         // If null, it will get set to itself later.
         domRoot: domRoot,
@@ -97,106 +88,54 @@ function newDomAppender<E extends AppendableElement>(
     };
 }
 
-function domAppenderDetatch(
-    parent: DomAppender<ValidElement>,
-    child: DomAppender<AppendableElement>
-) {
-    domAppenderClearParentAndShift(parent, child);
-    child.root.remove();
-}
 
-function domAppenderClearParentAndShift(
-    parent: DomAppender<ValidElement>,
-    child: DomAppender<AppendableElement>
-) {
-    assert(parent.children !== null);
-    assert(parent.children[child.selfIdx] === child);
-    assert(parent.idx <= child.selfIdx); // Dont move a DOM node that has already been appended
-    for (let i = child.selfIdx; i < parent.children.length - 1; i++) {
-        parent.children[i] = parent.children[i + 1];
-        parent.children[i].selfIdx = i;
-    }
-    parent.children.pop();
-    child.parent = null;
-}
+// This method attempts to diff the dom while we walk it. 
+// it's useful for the dom node to be inserted into the right position in the tree immediately.
+// (TODO: when moveBefore becomes Generally Available, we can just use that and this won't matter
+// so much)
+function appendToDomRoot(a: DomAppender<ValidElement> | null, child: DomAppender<AppendableElement>) {
+    if (a === null)              return;
+    if (a.isAppendable !== true) return;
 
-function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<AppendableElement>) {
-    if (a.children !== null) {
-        a.idx++;
-        const idx = a.idx;
-
-        if (child.parent !== null && child.parent !== a) {
-            const parent = child.parent;
-            domAppenderDetatch(parent, child);
-        }
-
-        if (idx === a.children.length) {
-            // Simply append this element
-            child.parent = a;
-            child.selfIdx = a.children.length;
-            a.children.push(child);
-            a.root.appendChild(child.root);
-        } else if (idx < a.children.length) {
-            const last = a.children[idx];
-            assert(last.parent === a);
-
-            if (last === child) {
-                // no action required. Hopefull, this is the HOT path
-            } else {
-                if (child.parent === a) {
-                    // If child is already here, we'll need to remove it beforehand
-                    domAppenderClearParentAndShift(child.parent, child);
-                }
-                a.root.replaceChild(child.root, last.root);
-                a.children[idx] = child;
-                last.parent = null;
-                child.selfIdx = idx;
-                child.parent = a;
-            }
+    if (child.root.parentNode !== a.root) {
+        if (a.nextChild === null) {
+            a.root.appendChild(child.root)
         } else {
-            assert(false); // unreachable
+            a.root.insertBefore(child.root, a.nextChild)
+        }
+    } else {
+        // child is already under a, so doesn't need insertion. 
+        // We still need to detach dom nodes between `nextChild` and `child`.
+        while (a.nextChild !== null && a.nextChild !== child.root) {
+            const nextChild = a.nextChild.nextSibling;
+            a.nextChild.remove();
+            a.nextChild = nextChild as AppendableElement;
         }
 
-        assert(child.parent === a);
-        assert(child.selfIdx === a.idx);
-
-        // turns out to be quite an expensive assertion, so I've commented it out for now
-        // assert(child.root.parentNode === a.root);
-    }
-}
-
-// Useful for debugging. Should be unused in prod.
-function assertInvariants(appender: DomAppender<ValidElement>) {
-    if (!appender.children) return;
-
-    for (let i = 0; i <= appender.idx; i++) {
-        const child = appender.children[i];
-
-        assert(appender.children[child.selfIdx] === child);
-
-        let count = 0;
-        for (let i = 0; i <= appender.idx; i++) {
-            const c2 = appender.children[i];
-            if (c2 === child) count++;
+        // Iterate the thing
+        if (a.nextChild !== null) {
+            a.nextChild = a.nextChild.nextSibling as AppendableElement;
         }
-        assert(count <= 1);
 
-        assert(child.parent === appender);
+        // Due to how im-core works, we'll mainly try to handle insertion/removal properly
+        // We could write code to make it so that only the smallest # of elements get shuffled around, 
+        // but this means that the choice for which dom element loses it's internal state i.e scroll 
+        // position (this happens when you remove and re-insert a dom node) is dependent on # of children being 
+        // moved and not really deterministic/ understandable in practice.
     }
+
+    // turns out to be quite an expensive assertion, so I've commented it out for now
+    // assert(child.root.parentNode === a.root);
 }
 
 function finalizeDomAppender(a: DomAppender<ValidElement>) {
     // by the time we get here, the dom nodes we want have already been appended in the right order, and
     // `a.children` should be pretty much identical to what is in the DOM. 
     // We just need to remove the children we didn't render this time
-    if (a.children !== null && (a.idx + 1 !== a.children.length)) {
-        // Remove remaining children. do so backwards, might be faster
-        for (let i = a.children.length - 1; i >= a.idx + 1; i--) {
-            a.children[i].root.remove();
-            a.children[i].parent = null;
-        }
-
-        a.children.length = a.idx + 1;
+    while (a.nextChild !== null) {
+        const nextChild = a.nextChild.nextSibling;
+        a.nextChild.remove();
+        a.nextChild = nextChild as AppendableElement;
     }
 }
 
@@ -216,7 +155,7 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
         const element = doc.createElement(r.val);
-        childAppender = im.Set(c, newDomAppender(element, appender.domRoot, []));
+        childAppender = im.Set(c, newDomAppender(element, appender.domRoot, true));
         childAppender.keyRef = r;
     }
 
@@ -229,15 +168,16 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     return childAppender;
 }
 
-function beginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
+function beginDomAppender(c: ImCache, appender: DomAppender<ValidElement> | null, childAppender: DomAppender<ValidElement>) {
     appendToDomRoot(appender, childAppender);
     im.pushParent(c, newDomAppender, childAppender);
-    childAppender.idx = -1;
+    if (childAppender.isAppendable) {
+        childAppender.nextChild = childAppender.root.firstChild as AppendableElement;
+    }
 }
 
-function endDomAppender(c: ImCache, appender: DomAppender<ValidElement>) {
+function endDomAppender(c: ImCache, _appender: DomAppender<ValidElement>) {
     im.popParent(c, newDomAppender);
-    appender.isFirstishRender = false;
 }
 
 /**
@@ -255,7 +195,7 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
         const svgElement = doc.createElementNS("http://www.w3.org/2000/svg", r.val);
         // Seems unnecessary. 
         // svgElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        childAppender = im.Set(c, newDomAppender(svgElement, appender.domRoot, []));
+        childAppender = im.Set(c, newDomAppender(svgElement, appender.domRoot, true));
         childAppender.keyRef = r;
     }
 
@@ -290,7 +230,7 @@ const imElSvgEnd = imElEnd;
 function imRootBegin(c: ImCache, root: ValidElement) {
     let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
-        appender = im.Set(c, newDomAppender(root, null, []));
+        appender = im.Set(c, newDomAppender(root, null, true));
         appender.domRoot = appender;
     }
 
@@ -299,13 +239,11 @@ function imRootBegin(c: ImCache, root: ValidElement) {
         throw new Error("You may have forgotten to pop an element somewhere")
     }
 
-    im.pushParent(c, newDomAppender, appender);
+    beginDomAppender(c, null, appender);
 
     // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
     imFinalizeDeferred(c);
 
-    appender.idx = -1;
-    
     assert(!!appender.deferList);
     appender.deferList.length = 0;
 
@@ -316,14 +254,13 @@ function imRootEnd(c: ImCache, root: ValidElement) {
     const appender = getCurrentAppender(c);
     assert(appender.root === root);
 
-    // By finalizing at the very end, we get two things:
-    // - Opportunity to make a 'global key' - a component that can be instantiated anywhere but reuses the same cache entries. 
-    //      a context menu is a good example of a usecase. Every component wants to instantiate it as if it were it's own, but really, 
-    //      only one can be open at a time - there is an opportunity to save resources here and reuse the same context menu every time.
-    // - Allows existing dom appenders to be re-pushed onto the stack, and appended to. 
-    //      Useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
-    //      For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
-    //      but then organising the components becomes a bit annoying.
+    // By finalizing at the very end, we can allow existing dom appenders to be re-pushed onto the stack, and appended to. 
+    // This is useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
+    // For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
+    // but then organising the components becomes a bit annoying.
+    
+    // However - in such cases, it's better to just have imLayerBegin/End and manually finalize in imLayerEnd, and
+    // I actually don't have a good second usecase, so I'm probably going to remove this deferred finalization ability soon.
 
     // deferred finalization.
     const deferList = appender.domRoot!.deferList;
@@ -402,7 +339,7 @@ function imStr(c: ImCache, value: Stringifyable): Text {
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         doc.createTextNode(""),
         appender,
-        null
+        false
     ));
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
@@ -425,7 +362,7 @@ function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text 
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         doc.createTextNode(""),
         appender.domRoot,
-        null
+        false
     ));
 
     const formatterChanged = im.Memo(c, formatter);
