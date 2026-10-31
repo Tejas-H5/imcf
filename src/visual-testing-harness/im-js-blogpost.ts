@@ -64,6 +64,12 @@ function pushLog(logs: any[], vals: any) {
     console.log(...vals);
 }
 
+function getTestName(language: string): string {
+    if (language.startsWith("ts - ")) return language.slice("ts - ".length);
+    if (language.startsWith("ts "))   return language.slice("ts ".length);
+    return language;
+}
+
 function inlineTestFromCodeBlock(code: string, language: string, userModules: tsc.Module[], diff?: string): InlineTest {
     const testState = newInlineTestState();
     const consoleStub = {
@@ -83,7 +89,7 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
             .filter(m => m.name.startsWith("im"))[0] ?? undefined;
 
     return {
-        name: language.substring("ts - ".length),
+        name: getTestName(language),
         typescriptOriginal: code,
         typescriptToDiffAgainst: diff,
         compiledJavascript: transformResult.javaScript,

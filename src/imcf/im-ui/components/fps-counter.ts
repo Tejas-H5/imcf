@@ -31,7 +31,9 @@ export function fpsMarkRenderingEnd(fps: FpsCounterState) {
     fps.renderEnd = performance.now();
 }
 
-export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
+export function imFpsCounterSimple(c: ImCache, fpsCounter?: FpsCounterState) {
+    if (!fpsCounter) fpsCounter = im.getFpsCounterState(c);
+
     const RINGBUFFER_SIZE = 20;
     let arr; arr = im.GetInline(c, imFpsCounterSimple);
     if (!arr) arr = im.Set(c, {

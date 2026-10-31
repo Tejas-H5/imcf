@@ -7,6 +7,7 @@ import { getPreviousResult, getUserAgentString, previousResults, previousResults
 import { imButtonIsClicked } from "imcf/im-ui/components/button";
 import { imSliderInput } from "imcf/im-ui/components/slider";
 
+// TODO: figure out what to do with this code
 export function imcfPerformanceBenchmarks(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
         imVisualTestInstallation(c, "Benchmark Runner", harness, imBenchmarkRunner, TEST_SCROLLABLE);

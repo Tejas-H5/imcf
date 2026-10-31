@@ -23,7 +23,7 @@ function skipTypeExpression(tsCode: string, pos: number): number {
 	i++;
 
 	const nextPos = toNonWhitespace(tsCode, i)
-	if  (!isLetter(tsCode[nextPos])) {
+	if (!isLetter(tsCode[nextPos])) {
 		return pos;
 	}
 	i = nextPos;
@@ -68,12 +68,34 @@ function skipTypeExpression(tsCode: string, pos: number): number {
 	return i;
 }
 
+function skipStringExpression(tsCode: string, i: number): number {
+	i = toNonWhitespace(tsCode, i);
+	if (tsCode[i] === '"') {
+		i++;
+		while (i < tsCode.length && tsCode[i] !== '"') {
+			if (tsCode[i] === '\\') {
+				i++;
+			}
+			i++;
+		}
+		i++;
+	}
+	return i;
+}
+
 export function transform(tsCode: string, modules: Module[]): CompileResult {
 	const sb: string[] = [];
 
 	let i = 0;
 	while (i < tsCode.length) {
-		if (compare(tsCode, i, "//")) {
+		if (compare(tsCode, i, "\"")) {
+			const start = i;
+			const end = skipStringExpression(tsCode, i);
+			const skippedText = tsCode.substring(start, end);
+			sb.push(skippedText);
+			console.log("Skipped string: ", skippedText)
+			i = end;
+		} else if (compare(tsCode, i, "//")) {
 			i = toNewline(tsCode, i);
 		} else if (compare(tsCode, i, "import ")) {
 			i = toNewline(tsCode, i);
@@ -126,23 +148,22 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 	}
 
 	const moduleArgs = modules
-		.map(m => m.namespace ?? `{ ${
-			Object
+		.map(m => m.namespace ?? `{ ${Object
 				.keys(m.env)
 				.map(key => functionNames.includes(key) ? `${key}: ${key}Imported` : key)
 				.join(", ")
-		} }`)
+			} }`)
 		.join(",");
 
-	const codeGenCode = 
-`return ((${moduleArgs}) => {
+	const codeGenCode =
+		`return ((${moduleArgs}) => {
 	${code}
 	return {${functionNames.join(", ")}};
 })`
 
 	try {
 		const codeGenFn = new Function(codeGenCode)();
-		const values    = codeGenFn(...modules.map(m => m.env));
+		const values = codeGenFn(...modules.map(m => m.env));
 		return {
 			javaScript: code,
 			values: values,
@@ -232,7 +253,7 @@ export function isWhitespace(c: string | undefined): boolean {
 }
 
 export function isLetter(c: string) {
-    const code = c.charCodeAt(0);
+	const code = c.charCodeAt(0);
 	if (65 <= code && code < 91) {
 		// A-Z
 		return true;

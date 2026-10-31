@@ -11,8 +11,10 @@ import tutorial2 from "./pages/tutorial-2.md";
 import tutorial3 from "./pages/tutorial-3.md";
 import stillNotSure from "./pages/still-not-sure.md";
 import diffTest from "./pages/diff-test.md";
+import benchmarks from "./pages/benchmarks.md";
 
 import { assert } from "assert";
+import { imFpsCounterSimple } from "imcf/im-ui/components/fps-counter";
 
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
@@ -42,10 +44,11 @@ const modules = [
     { namespace: "imui",    env: imui },
     { namespace: "cssVars", env: cssVars },
     { env: {
-        assert: assert,
-        imDivBegin: imDivBegin, imDivEnd: imDivEnd, 
-        imButtonIsClicked: imButtonIsClicked,
-        imStr: imStr,
+        assert,
+        imDivBegin, imDivEnd,
+        imButtonIsClicked,
+        imFpsCounterSimple,
+        imStr,
     }}
 ]
 
@@ -56,7 +59,9 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(tutorial3, modules),
+    newVisualTestFromBlogLang(benchmarks, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
+    newVisualTestFromBlogLang(theEnd, modules),
     newVisualTestFromBlogLang(theEnd, modules),
 ];
 
