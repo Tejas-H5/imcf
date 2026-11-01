@@ -93,7 +93,7 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 			const end = skipStringExpression(tsCode, i);
 			const skippedText = tsCode.substring(start, end);
 			sb.push(skippedText);
-			console.log("Skipped string: ", skippedText)
+			// console.log("Skipped string: ", skippedText)
 			i = end;
 		} else if (compare(tsCode, i, "//")) {
 			i = toNewline(tsCode, i);
@@ -121,7 +121,7 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 				const end = i;
 				const skippedText = tsCode.substring(start, end);
 				sb.push(skippedText);
-				console.log("skipping object", skippedText);
+				// console.log("skipping object", skippedText);
 			}
 		} else if (compare(tsCode, i, "case ")) {
 			const start = i;
