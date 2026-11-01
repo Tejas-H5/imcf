@@ -55,12 +55,13 @@ function testChildTextAt(r: test.Result, el: HTMLElement, idx: number, text: str
 }
 
 function imTextEl(r: test.Result, c: ImCache, text: string) {
-    imDivBegin(r, c); {
+    const root = imDivBegin(r, c); {
         imdom.Str(c, text);
     } imDivEnd(r, c);
+    return root;
 }
 
-function imDivBegin(r: test.Result, c: ImCache): DomAppender {
+function imDivBegin(r: test.Result, c: ImCache): DomAppender<HTMLDivElement> {
     return imdom.ElBegin(c, el.DIV);
 }
 function imDivEnd(r: test.Result, c: ImCache) {
@@ -117,6 +118,88 @@ test.group("Dom trivial building logic", [], () => {
         const div2 = testChildAt(r, root, 1, "DIV");
         testChildTextAt(r, div2, 0, "B");
         testChildTextAt(r, div2, 1, "C");
+    });
+
+    test.add("Same item in multiple places", r => {
+        const { c, root } = newTestState();
+
+        function imRender(a: boolean): [HTMLElement, HTMLElement] {
+            let dstA, dstB;
+
+            imTestBegin(r, c, root); {
+                const div = imdom.ElBeginOffscreen(c, el.DIV); {
+                    imdom.Str(c, "*");
+                } imdom.ElEnd(c, el.DIV);
+
+                dstA = imDivBegin(r, c); {
+                    imTextEl(r, c, "=======");
+                    if (im.If(c) && a) {
+                        imdom.AppendHere(c, div);
+                    } im.IfEnd(c);
+                    imTextEl(r, c, "=======");
+                } imDivEnd(r, c);
+
+                dstB = imDivBegin(r, c); {
+                    imTextEl(r, c, "=======");
+                    if (im.If(c) && !a) {
+                        imdom.AppendHere(c, div);
+                    } im.IfEnd(c);
+                    imTextEl(r, c, "=======");
+                } imDivEnd(r, c);
+            } imTestEnd(c, root, r);
+
+            return [dstA.root, dstB.root];
+        }
+
+        for (let i = 0; i < 4; i++) {
+            const isA = i % 2 === 0;
+            const [dstA, dstB] = imRender(isA);
+
+            let target, other;
+            if (isA) {
+                target = dstA;
+                other = dstB;
+            } else {
+                target = dstB;
+                other = dstA;
+            }
+
+            testChildCount(r, target, 3);
+            testChildTextAt(r, target, 0, "=======");
+            testChildTextAt(r, target, 1, "*");
+            testChildTextAt(r, target, 2, "=======");
+
+            testChildCount(r, other, 2);
+        }
+    });
+
+    test.add("Multiple items under the same dom node", r => {
+        const { c, root } = newTestState();
+
+        let commandLayer: DomAppender<HTMLElement>;
+
+        imTestBegin(r, c, root); {
+            commandLayer = imdom.ElBegin(c, el.DIV); imdom.FinalizeDeferred(c); {
+            } imdom.ElEnd(c, el.DIV);
+
+            function imKeyboardShortcut(c: ImCache, name: string, keys: string) {
+                imTextEl(r, c, name);
+
+                imdom.AppenderBegin(c, commandLayer); {
+                    imTextEl(r, c, "[" + keys + "]");
+                } imdom.AppenderEnd(c, commandLayer);
+            }
+
+            imKeyboardShortcut(c, "Cut", "Ctrl+X");
+            imKeyboardShortcut(c, "Copy", "Ctrl+C");
+            imKeyboardShortcut(c, "Paste", "Ctrl+V");
+        } imTestEnd(c, root, r);
+
+        testChildCount(r, root, 4);
+        testChildCount(r, commandLayer.root, 3);
+        testChildTextAt(r, commandLayer.root, 0, "[Ctrl+X]");
+        testChildTextAt(r, commandLayer.root, 1, "[Ctrl+C]");
+        testChildTextAt(r, commandLayer.root, 2, "[Ctrl+V]");
     });
 });
 

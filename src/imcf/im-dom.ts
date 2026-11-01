@@ -54,6 +54,7 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     // Also will be needed for 3rd party lib integrations.
     manualDom: boolean;
 
+    // This is the very root of this dom tree (not the parent or the root of this appender)
     domRoot: DomAppender<ValidElement> | null;
     // Text nodes, for example, cannot be appended to.
     isAppendable: boolean; 
@@ -139,7 +140,6 @@ function finalizeDomAppender(a: DomAppender<ValidElement>) {
     }
 }
 
-
 /**
  * NOTE: SVG elements are actually different from normal HTML elements, and 
  * will need to be created wtih {@link imElSvgBegin}
@@ -148,29 +148,25 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>,
 ): DomAppender<HTMLElementTagNameMap[K]> {
-    // TODO: support changing the type
-    // Make this entry in the current entry list, so we can delete it easily
-    const appender = getCurrentAppender(c);
-
-    let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
-    if (childAppender === undefined) {
-        const element = doc.createElement(r.val);
-        childAppender = im.Set(c, newDomAppender(element, appender.domRoot, true));
-        childAppender.keyRef = r;
-    }
-
-    if (childAppender.keyRef !== r) {
-        throw new Error(`Expected ${r.val} here, but got ${childAppender.keyRef?.val} instead - ${im.CONDITIONAL_RENDERING_ERROR_MESSAGE}`);
-    }
-
-    beginDomAppender(c, appender, childAppender);
-
+    const parent = getCurrentAppender(c);
+    const childAppender = imElCreate(c, r);
+    im.pushParent(c, newDomAppender, childAppender);
+    appendToDomRoot(parent, childAppender);
+    beginDomAppender(childAppender);
     return childAppender;
 }
 
-function beginDomAppender(c: ImCache, appender: DomAppender<ValidElement> | null, childAppender: DomAppender<ValidElement>) {
-    appendToDomRoot(appender, childAppender);
+function imElBeginOffscreen<K extends keyof HTMLElementTagNameMap>(
+    c: ImCache,
+    r: KeyRef<K>,
+): DomAppender<HTMLElementTagNameMap[K]> {
+    const childAppender = imElCreate(c, r);
     im.pushParent(c, newDomAppender, childAppender);
+    beginDomAppender(childAppender);
+    return childAppender;
+}
+
+function beginDomAppender(childAppender: DomAppender<ValidElement>) {
     if (childAppender.isAppendable) {
         childAppender.nextChild = childAppender.root.firstChild as AppendableElement;
     }
@@ -180,10 +176,8 @@ function endDomAppender(c: ImCache, _appender: DomAppender<ValidElement>) {
     im.popParent(c, newDomAppender);
 }
 
-/**
- * Svg nodes are different from normal DOM nodes, so you'll need to use this function to create them instead.
- */
-function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
+/** Svg version of {@link imElCreate} */
+function imElSvgCreate<K extends keyof SVGElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>,
 ): DomAppender<SVGElementTagNameMap[K]> {
@@ -204,11 +198,59 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
         throw new Error(`Expected ${r.val} here, but got ${childAppender.keyRef?.val} instead - ${im.CONDITIONAL_RENDERING_ERROR_MESSAGE}`);
     }
 
-    beginDomAppender(c, appender, childAppender);
-
     return childAppender;
 }
 
+/**
+ * SVG version of {@link imElBegin}
+ * SVG nodes are created differently from normal DOM nodes, so we have a different method for this. 
+ * Other operations should be mostly the same though (?)
+ */
+function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
+    c: ImCache,
+    r: KeyRef<K>,
+): DomAppender<SVGElementTagNameMap[K]> {
+    const childAppender = imElSvgCreate(c, r);
+    const parent = getCurrentAppender(c);
+    im.pushParent(c, newDomAppender, childAppender);
+    appendToDomRoot(parent, childAppender);
+    beginDomAppender(childAppender);
+    return childAppender;
+}
+
+/**
+ * SVG version of {@link imElBeginOffscreen}
+ */
+function imElSvgBeginOffscreen<K extends keyof SVGElementTagNameMap>(
+    c: ImCache,
+    r: KeyRef<K>,
+): DomAppender<SVGElementTagNameMap[K]> {
+    const childAppender = imElSvgCreate(c, r);
+    im.pushParent(c, newDomAppender, childAppender);
+    beginDomAppender(childAppender);
+    return childAppender;
+}
+
+// Creates a DOM appender without appending it or making it the current immediate-mode scope's parent item
+function imElCreate<K extends keyof HTMLElementTagNameMap>(
+    c: ImCache,
+    r: KeyRef<K>,
+): DomAppender<HTMLElementTagNameMap[K]> {
+    let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
+    if (childAppender === undefined) {
+        const appender = getCurrentAppender(c);
+        const element = doc.createElement(r.val);
+        childAppender = im.Set(c, newDomAppender(element, appender.domRoot, true));
+        childAppender.keyRef = r;
+    }
+
+    // TODO: support changing the type
+    if (childAppender.keyRef !== r) {
+        throw new Error(`Expected ${r.val} here, but got ${childAppender.keyRef?.val} instead - ${im.CONDITIONAL_RENDERING_ERROR_MESSAGE}`);
+    }
+
+    return childAppender;
+}
 
 function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
     const appender = getCurrentAppender(c);
@@ -239,7 +281,8 @@ function imRootBegin(c: ImCache, root: ValidElement) {
         throw new Error("You may have forgotten to pop an element somewhere")
     }
 
-    beginDomAppender(c, null, appender);
+    im.pushParent(c, newDomAppender, appender);
+    beginDomAppender(appender);
 
     // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
     imFinalizeDeferred(c);
@@ -296,9 +339,24 @@ function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
     appender.label = str;
 }
 
-// Use this whenever you expect to render to a particular dom node from a place in the code that
-// would otherwise not have access to this dom node.
-function imRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
+/**
+ * Use this whenever you expect to appender to an existing dom node from inside some other UI. 
+ * For example - you have a graph component where all the nodes are absolute positioned divs, but 
+ * you may want to render some lines/other stuff on a background SVG layer:
+ *
+ * ```ts
+ * function imNode(c, ctx) {
+ *      // Render the node here
+ *
+ *      im.AppenderBeginAppending(c, ctx.svgLayer); {
+ *          // SVG code here
+ *      } im.AppenderEnd(c, ctx.svgLayer);
+ * }
+ * ```
+ *
+ * You should assume that many components have already appened to `existing` to and will append to `existing` later.
+ */
+function imAppenderBegin(c: ImCache, existing: DomAppender<any>) {
     // If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
     // I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
     // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
@@ -309,13 +367,24 @@ function imRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     im.pushParent(c, newDomAppender, existing);
 }
 
-function imRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
+/**
+ * Appends an existing dom node that you've already created and rendered to elsewhere.
+ * You would only need this if you have some cool memory optimization/DOM node reuse thing you wanted to do.
+ */
+function imAppendHere(c: ImCache, existing: DomAppender<any>) {
+    const appender = getCurrentAppender(c);
+    appendToDomRoot(appender, existing);
+}
+
+function imAppenderEnd(c: ImCache, existing: DomAppender<any>) {
     const appender = getCurrentAppender(c);
     assert(appender === existing);
     endDomAppender(c, appender);
 }
 
-/** @deprecated TODO: remove this method in favour of explicitly finalizing */
+// Use this if you need the framework to automatically finalize it at the very end of the render pass. 
+// Most of the time this is undesireable, because code that relies on measuring the dimensions of your
+// UI at that point in time won't work consistently - your UI will contain DOM nodes that have yet to be removed.
 function imFinalizeDeferred(c: ImCache) {
     getCurrentAppender(c).finalizeType = FINALIZE_DEFERRED;
 }
@@ -1338,60 +1407,35 @@ export const elsvg = EL_SVG;
 export const key = KEY;
 
 export const imdom = {
+    /** 
+     * Main entrypoint into the framework:
+     *
+     * function imMain(c: ImCache) {
+     *      // Your code here
+     * }
+     *
+     * imdom.startAnimationLoop(document.body, imMain);
+     **/
+    startAnimationLoop,
+
     /** Internal methods */
-    newDomAppender,  // This is the typeId of a Dom Appender.
     setWindow,       // Required for testing purposes
 
     getAppender: getCurrentAppender,  // Gets the current DOM appender. Very useful for utils
     getElement: getCurrentElement,    // Short for getAppender().root
 
-    /**
-     * Typicaly just used at the very root of the program:
-     *
-     * ```
-     * function imMain(c: im.Cache) {
-     *      try {
-     *          im.CacheBegin(c, imMain); {
-     *              imdom.Begin(c, doc.body); {
-     *                  // Your code here
-     *              } imdom.End(c, doc.body, ev);
-     *          } im.CacheEnd(c);
-     *      } catch (e) {
-     *          doc.body.replaceChildren();
-     *          throw e;
-     *      }
-     * }
-     *
-     * const globalImCache: ImCache = im.newCache();
-     * imMain(globalImCache);
-     * ```
-     *
-     * The try/catch allows top-level uncaught to actually be noticeable.
-     * If you wanted to put a little error page there, I'd recommend looking into
-     * `im.Try/im.Catch/im.TryEnd`, but untill then, the error handling above is 
-     * a lot better than nothing.
-     */
+    /** DOM-node creation/reuse */
     Begin: imDomBegin, End: imDomEnd,
     RootBegin: imRootBegin, RootEnd: imRootEnd,
-
-    /** DOM-node creation */
-
-    ElBegin:    imElBegin,    ElEnd: imElEnd,          // DOM nodes
-    ElSvgBegin: imElSvgBegin, ElSvgEnd: imElSvgEnd,    // SVG Dom nodes (technically different :nerd-emoji:)
+    ElBeginOffscreen:    imElBeginOffscreen,    ElBegin:    imElBegin,    ElEnd:    imElEnd,    // DOM nodes
+    ElSvgBeginOffscreen: imElSvgBeginOffscreen, ElSvgBegin: imElSvgBegin, ElSvgEnd: imElSvgEnd, // SVG Dom nodes (technically different :nerd-emoji: :up-finger-emoji:)
     Str:    imStr,       // Text node
     StrFmt: imStrFmt,    // Text node, custom formatter for arbitrary object. Try to make formatter a constant! Otherwise, expect terrible performance
     Text:   imStr,
     TextFmt: imStrFmt,
-
-    /** 
-     * These methods allow re-pushing a node we created somewhere else in the DOM to the immediate-mode stack.
-     * You can now append more things under that node from here. Useful in certain specific situations. 
-     * Not useful without FinalizeDeferred. Although maybe there should be the option to explicitly finalize the node yourself, instead of having
-     * deferred finalization at all...
-     **/
-    RootExistingBegin: imRootExistingBegin,
-    RootExistingEnd:   imRootExistingEnd,
-    FinalizeDeferred:  imFinalizeDeferred,
+    AppenderBegin: imAppenderBegin, AppenderEnd:   imAppenderEnd,
+    AppendHere: imAppendHere,
+    FinalizeDeferred:       imFinalizeDeferred,
     FINALIZE_IMMEDIATELY,
     FINALIZE_DEFERRED,
 
@@ -1413,8 +1457,8 @@ export const imdom = {
 
     /** Global event system */
 
-    /* Already called by {@link imdom.Begin}/{@link imdom.End}, so you don't need to use it yourself */
-    GlobalEventSystemBegin: imGlobalEventSystemBegin, GlobalEventSystemEnd: imGlobalEventSystemEnd, 
+    /** Already called by {@link imdom.Begin}/{@link imdom.End}, so you don't need to use it yourself */
+    GlobalEventSystemBegin: imGlobalEventSystemBegin, GlobalEventSystemEnd: imGlobalEventSystemEnd,
 
     getMouse,
     getKeyboard,
@@ -1426,8 +1470,6 @@ export const imdom = {
     hasMouseOver,
     isKeyPressed, isKeyRepeated, isKeyPressedOrRepeated, isKeyReleased, isKeyHeld,
     isLetterPressed, isLetterRepeated, isLetterPressedOrRepeated, isLetterReleased, isLetterHeld,
-
-    startAnimationLoop,
 
     /** Global event system - internal methods */
     newImGlobalEventSystem,
