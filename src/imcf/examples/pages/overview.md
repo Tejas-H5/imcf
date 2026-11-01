@@ -395,12 +395,6 @@ Other than all the stuff I make for myself (mostly unremarkable and unknown stuf
 We are venturing off the beaten path.
 Raise issues on #url[this GitHub repository, https://github.com/Tejas-H5/imcf] as needed.
 
-## Is it still work trying this UI framework now that AI can oneshot any React component?
-
-I have yet to use AI witht this framework, but it has been my experience that there
-are a lot of bespoke components that AI can't just oneshot from scratch - you still need to 
-be knowledgeable about the NPM and React ecosystem to get the more complicated UIs to work. 
-
-If you already have a bunch of experience hand-crafting UI interactions in an immediate-mode 
-    game loop setting, this framework should make it a lot easier, without requiring you 
-    to downgrade from real DOM-nodes to draw calls on a canvas.
+<!-- ## Is it still worth trying this UI framework now that AI can oneshot any React component? -->
+<!-- The people on this page would already be thinking 'yes', else they wouldnt click the link. -->
+<!-- As of opus-5-5, AI can use this framework and probably any framework you give it just fine. -->

@@ -1,12 +1,16 @@
 # Benchmarks
 
-These benchmarks are what I use to understand the performance characteristics of the framework. 
-If you can think of any other ones, do let me know!
-Also I need to write some more text here so that my blogpost renderer can lay it out properly.
+These benchmarks are what I use to understand the performance characteristics of the framework,
+and whether a change I've made has had a substantial negative impact or not.
+It's not something I plan on competing with other frameworks on - plain JS will be 
+be a lot faster for managing large amounts of DOM nodes most of the time. When you're
+in that situation, you would think about rewriting that specific UI with canvas/WebGL or 
+raw JS rather than deliberating over which framework to rewrite your whole app to.
 
 ```ts - some boxes
 
 const MIN_ROWS = 1;
+const ROWS_INCREMENT = 500;
 
 function imMain(c: ImCache) {
     const state = im.Get(c, imMain) ?? im.Set(c, {
@@ -21,8 +25,8 @@ function imMain(c: ImCache) {
             {
                 imdom.Str(c, "Rows: ");
                 imdom.Str(c, state.rows);
-                if (imButtonIsClicked(c, "-")) { state.rows--; }
-                if (imButtonIsClicked(c, "+")) { state.rows++; }
+                if (imButtonIsClicked(c, "-")) { state.rows -= ROWS_INCREMENT; }
+                if (imButtonIsClicked(c, "+")) { state.rows += ROWS_INCREMENT; }
                 state.rows = Math.max(1, state.rows);
             }
 
@@ -39,9 +43,7 @@ function imMain(c: ImCache) {
         } imDivEnd(c);
 
         imDivBegin(c, "display: flex; flex-direction: column; gap: 10px"); {
-            let rowCout = 0;
             im.For(c); for (let row = 0; row < state.rows; row++) {
-                rowCout++;
                 imDivBegin(c, "display: flex; gap: 10px; "); {
                     im.For(c); for (let col = 0; col < state.cols; col++) {
                         imDivBegin(c, "width: 100px; height: 100px; border: 2px solid black; border-radius: 10px;"); {

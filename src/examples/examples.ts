@@ -62,7 +62,6 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(benchmarks, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
     newVisualTestFromBlogLang(theEnd, modules),
-    newVisualTestFromBlogLang(theEnd, modules),
 ];
 
 if (!import.meta.env.IS_PROD) {

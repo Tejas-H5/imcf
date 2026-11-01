@@ -1,4 +1,4 @@
-import { im, ImCache, imdom, el } from "imcf";
+import { im, ImCache, imdom, el, ev } from "imcf";
 import { BLOCK, COL, cssVars, END, imui, INLINE, NA, PX, ROW, START } from "imcf/im-ui";
 import { imButtonIsClicked } from "imcf/im-ui/components/button";
 import { lerp, lerp01 } from "imcf/im-ui/components/math-utils";
@@ -204,9 +204,12 @@ export function imVisualTestHarness(
                     } imui.End(c);
 
                     imRenderWithErrorBoundary(c, s, currentTest.code);
-                } imui.End(c);
 
-                scrolledToTop = scrollView.scrollTop < 20;
+                    const scrollEndEv = imdom.On(c, ev.SCROLLEND);
+                    if (scrollEndEv) {
+                        scrolledToTop = scrollView.scrollTop < 20;
+                    }
+                } imui.End(c);
 
                 // Left
                 {
@@ -283,19 +286,22 @@ export function imVisualTestHarness(
         scrollToInstalllation(s, currentScrolledInstallation)
     }
 
+    if (scrolledToTop) {
+        console.log("Scroll to top")
+        updateHash(s, undefined);
+    }
+
     if (
         (im.Memo(c, s.currentVisibleInstallation) === im.MEMO_CHANGED) && 
         !s.currentHoveredInstallation &&
-        !s.animations.rightSidebar.sideBarOpen
+        !s.animations.rightSidebar.sideBarOpen && 
+        !scrolledToTop
     ) {
-        if (scrolledToTop) {
-            updateHash(s, undefined);
-        } else if (s.currentVisibleInstallation) {
+        if (s.currentVisibleInstallation) {
             updateHash(s, s.currentVisibleInstallation);
-        } else {
-            // If no installation is visible, keep the hash as it is.
         }
     }
+
 }
 
 export function imRenderWithErrorBoundary(
@@ -385,16 +391,15 @@ function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown)
     const leftUnit  = isLeft ? PX : NA;
     const rightUnit = isLeft ? NA : PX;
 
-    const el             = imdom.getElement(c);
-    const rootClientRect = el.getBoundingClientRect();
+    const { size }  = imdom.TrackSize(c);
 
     imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, rightUnit, 0, PX, 0, leftUnit); imui.Justify(c); {
         if (im.IsFirstRender(c)) imdom.setStyle(c, "overflowY", "auto");
         if (im.IsFirstRender(c)) imdom.setStyle(c, "overflowX", "hidden");
 
-        if (im.Memo(c, sidebar.sideBarOpen01) | im.Memo(c, rootClientRect.width)) {
+        if (im.Memo(c, sidebar.sideBarOpen01) | im.Memo(c, size.width)) {
             imdom.setStyle(c, "fontSize", (1 * sidebar.sideBarOpen01) + "em");
-            imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * rootClientRect.width, 5000, sidebar.sideBarOpen01) + "px");
+            imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * size.width, 5000, sidebar.sideBarOpen01) + "px");
         }
 
         imui.Begin(c, COL); {
