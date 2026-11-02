@@ -58,6 +58,7 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     domRoot: DomAppender<ValidElement> | null;
     // Text nodes, for example, cannot be appended to.
     isAppendable: boolean; 
+    // TODO: store a DomAppender - it's meant to be faster.
     nextChild: AppendableElement | null;
 
     // if FINALIZE_IMMEDIATELY, the final pass can ignore this.
@@ -130,13 +131,15 @@ function appendToDomRoot(a: DomAppender<ValidElement> | null, child: DomAppender
 }
 
 function finalizeDomAppender(a: DomAppender<ValidElement>) {
-    // by the time we get here, the dom nodes we want have already been appended in the right order, and
-    // `a.children` should be pretty much identical to what is in the DOM. 
-    // We just need to remove the children we didn't render this time
-    while (a.nextChild !== null) {
-        const nextChild = a.nextChild.nextSibling;
-        a.nextChild.remove();
-        a.nextChild = nextChild as AppendableElement;
+    if (a.manualDom !== true) {
+        // by the time we get here, the dom nodes we want have already been appended in the right order, and
+        // `a.children` should be pretty much identical to what is in the DOM. 
+        // We just need to remove the children we didn't render this time
+        while (a.nextChild !== null) {
+            const nextChild = a.nextChild.nextSibling;
+            a.nextChild.remove();
+            a.nextChild = nextChild as AppendableElement;
+        }
     }
 }
 

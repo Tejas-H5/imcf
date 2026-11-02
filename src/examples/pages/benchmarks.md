@@ -18,34 +18,37 @@ function imMain(c: ImCache) {
         cols: 4, 
     })
 
+    imDivBegin(c, "display: flex; gap: 10px"); {
+        {
+            imdom.Str(c, "Rows: ");
+            imdom.Str(c, state.rows);
+            if (imButtonIsClicked(c, "-")) { state.rows -= ROWS_INCREMENT; }
+            if (imButtonIsClicked(c, "+")) { state.rows += ROWS_INCREMENT; }
+            state.rows = Math.max(1, state.rows);
+        }
+
+        {
+            imdom.Str(c, "Cols: ");
+            imdom.Str(c, state.cols);
+            if (imButtonIsClicked(c, "-")) { state.cols--; }
+            if (imButtonIsClicked(c, "+")) { state.cols++; }
+            state.cols = Math.max(1, state.cols);
+        }
+
+        imdom.Str(c, "Total squares: ");
+        imdom.Str(c, state.rows * state.cols);
+    } imDivEnd(c);
+
+    imBenchmarkRunner(c, imSomeBoxes, state.rows, state.cols);
+
+}
+
+function imSomeBoxes(c: ImCache, rows: number, cols: number) {
     imDivBegin(c, " "); {
-        imFpsCounterSimple(c);
-
-        imDivBegin(c, "display: flex; gap: 10px"); {
-            {
-                imdom.Str(c, "Rows: ");
-                imdom.Str(c, state.rows);
-                if (imButtonIsClicked(c, "-")) { state.rows -= ROWS_INCREMENT; }
-                if (imButtonIsClicked(c, "+")) { state.rows += ROWS_INCREMENT; }
-                state.rows = Math.max(1, state.rows);
-            }
-
-            {
-                imdom.Str(c, "Cols: ");
-                imdom.Str(c, state.cols);
-                if (imButtonIsClicked(c, "-")) { state.cols--; }
-                if (imButtonIsClicked(c, "+")) { state.cols++; }
-                state.cols = Math.max(1, state.cols);
-            }
-
-            imdom.Str(c, "Total squares: ");
-            imdom.Str(c, state.rows * state.cols);
-        } imDivEnd(c);
-
         imDivBegin(c, "display: flex; flex-direction: column; gap: 10px"); {
-            im.For(c); for (let row = 0; row < state.rows; row++) {
+            im.For(c); for (let row = 0; row < rows; row++) {
                 imDivBegin(c, "display: flex; gap: 10px; "); {
-                    im.For(c); for (let col = 0; col < state.cols; col++) {
+                    im.For(c); for (let col = 0; col < cols; col++) {
                         imDivBegin(c, "width: 100px; height: 100px; border: 2px solid black; border-radius: 10px;"); {
                         } imDivEnd(c);
                     } im.ForEnd(c);

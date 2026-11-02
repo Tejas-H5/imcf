@@ -15,6 +15,7 @@ import benchmarks from "./pages/benchmarks.md";
 
 import { assert } from "assert";
 import { imFpsCounterSimple } from "imcf/im-ui/components/fps-counter";
+import { imBenchmarkRunner } from "./benchmark-runner";
 
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
@@ -49,6 +50,7 @@ const modules = [
         imButtonIsClicked,
         imFpsCounterSimple,
         imStr,
+        imBenchmarkRunner,
     }}
 ]
 
