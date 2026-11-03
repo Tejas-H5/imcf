@@ -1,4 +1,4 @@
-import { el, im, ImCache, ImCacheRerenderFn, imdom } from "imcf";
+import { el, im, ImCache, imdom } from "imcf";
 import { BLOCK, imui } from "imcf/im-ui";
 import { imButtonIsClicked } from "imcf/im-ui/components/button";
 import { imFpsCounterSimple } from "imcf/im-ui/components/fps-counter";
@@ -16,7 +16,7 @@ export function imBenchmarkRunner(
         result: newBenchmarkResult(),
     });
 
-    if (imButtonIsClicked(c, state.reportView ? "UI View" : "Report View", !state.reportView)) {
+    if (imButtonIsClicked(c, state.reportView ? "Report view" : "UI view")) {
         state.reportView = !state.reportView;
     }
 
@@ -58,67 +58,89 @@ function newBenchmarkResult(): BenchmarkResult {
     return { coldTimeMs: 0, warmTimeMs: 0 };
 }
 
+function renderVariadicComponent(
+    c: ImCache,
+    fn: (c: ImCache, ...args: any[]) => void,
+    root: HTMLElement,
+    ...args: any[]
+) {
+    im.CacheBegin(c, true); {
+        imdom.RootBegin(c, root); {
+            fn(c, ...args);
+        } imdom.RootEnd(c, root);
+    } im.CacheEnd(c);
+}
+
 function runBenchmark(
     fn: (c: ImCache, ...args: any[]) => void,
     root: HTMLElement,
     ...args: any[]
 ): BenchmarkResult {
-    function renderFn(c: ImCache) {
-        im.CacheBegin(c, true); {
-            imdom.RootBegin(c, root); {
-                fn(c, ...args);
-            } imdom.RootEnd(c, root);
-        } im.CacheEnd(c);
-    }
+    // Breaking this up into two functions allows the profiler
+    // to better attribute the costs to the cold/warm parts of
+    // the benchmark
 
-    let coldTimeMs = 0; 
-    {
-        let renders = 20;
-        let error: any;
-        for (let i = 0; i < renders; i++) {
-            try {
-                let t0 = performance.now();
-                const c = im.newCache();
-                renderFn(c);
-                const total = performance.now() - t0;
-                root.replaceChildren();
-                coldTimeMs += total;
-            } catch(e) {
-                error = e;
-                console.error(e);
-                return newBenchmarkResult();
-                break;
-            }
-        }
+    const coldTimeMs = runBenchmarkCold(fn, root, ...args);
+    root.replaceChildren();
 
-        coldTimeMs /= renders;
-    }
-
-    let warmTimeMs = 0; 
-    {
-        const c = im.newCache();
-        renderFn(c);
-
-        let renders = 200;
-        let error: any;
-        for (let i = 0; i < renders; i++) {
-            try {
-                let t0 = performance.now();
-                renderFn(c);
-                const total = performance.now() - t0;
-                warmTimeMs += total;
-            } catch(e) {
-                error = e;
-                console.error(e);
-                return newBenchmarkResult();
-                break;
-            }
-        }
-
-        warmTimeMs /= renders;
-    }
-
+    const warmTimeMs = runBenchmarkWarm(fn, root, ...args);
     root.replaceChildren();
 
     return { coldTimeMs, warmTimeMs };
+}
+
+function runBenchmarkCold(
+    fn: (c: ImCache, ...args: any[]) => void,
+    root: HTMLElement,
+    ...args: any[]
+): number {
+    let coldTimeMs = 0;
+    let renders = 20;
+    let error: any;
+    for (let i = 0; i < renders; i++) {
+        try {
+            let t0 = performance.now();
+            const c = im.newCache();
+            renderVariadicComponent(c, fn, root, ...args);
+            const total = performance.now() - t0;
+            root.replaceChildren();
+            coldTimeMs += total;
+        } catch (e) {
+            error = e;
+            console.error(e);
+            break;
+        }
+    }
+
+    coldTimeMs /= renders;
+    return coldTimeMs;
+}
+
+function runBenchmarkWarm(
+    fn: (c: ImCache, ...args: any[]) => void,
+    root: HTMLElement,
+    ...args: any[]
+): number {
+    const c = im.newCache();
+    renderVariadicComponent(c, fn, root, ...args);
+
+    let warmTimeMs = 0;
+    let renders = 200;
+    let error: any;
+    for (let i = 0; i < renders; i++) {
+        try {
+            let t0 = performance.now();
+            renderVariadicComponent(c, fn, root, ...args);
+            const total = performance.now() - t0;
+            warmTimeMs += total;
+        } catch(e) {
+            error = e;
+            console.error(e);
+            break;
+        }
+    }
+
+    warmTimeMs /= renders;
+
+    return warmTimeMs;
 }

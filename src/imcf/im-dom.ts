@@ -53,13 +53,18 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     // depending on how the browser has implemented DOM node rendering.
     // Also will be needed for 3rd party lib integrations.
     manualDom: boolean;
+    // Text nodes, for example, cannot be appended to.
+    isAppendable: boolean; 
 
     // This is the very root of this dom tree (not the parent or the root of this appender)
     domRoot: DomAppender<ValidElement> | null;
-    // Text nodes, for example, cannot be appended to.
-    isAppendable: boolean; 
-    // TODO: store a DomAppender - it's meant to be faster.
-    nextChild: AppendableElement | null;
+
+    cursor: DomAppender<ValidElement> | null;
+    parent: DomAppender<ValidElement> | null;
+    firstChild: DomAppender<ValidElement> | null;
+    lastChild: DomAppender<ValidElement> | null;
+    nextSibling: DomAppender<ValidElement> | null;
+    previousSibling: DomAppender<ValidElement> | null;
 
     // if FINALIZE_IMMEDIATELY, the final pass can ignore this.
     finalizeType: FinalizationType; 
@@ -80,7 +85,12 @@ function newDomAppender<E extends AppendableElement>(
         keyRef: null,
 
         isAppendable: appendable,
-        nextChild: null,
+        parent: null,
+        cursor: null,
+        firstChild: null,
+        lastChild: null,
+        nextSibling: null,
+        previousSibling: null,
         manualDom: false,
         finalizeType: FINALIZE_IMMEDIATELY,
 
@@ -95,28 +105,56 @@ function newDomAppender<E extends AppendableElement>(
 // it's useful for the dom node to be inserted into the right position in the tree immediately.
 // (TODO: when moveBefore becomes Generally Available, we can just use that and this won't matter
 // so much)
-function appendToDomRoot(a: DomAppender<ValidElement> | null, child: DomAppender<AppendableElement>) {
-    if (a === null)              return;
-    if (a.isAppendable !== true) return;
+function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<any>) {
+    if (a.cursor === child) {
+        a.cursor = a.cursor.nextSibling;
+    } else if (child.parent !== a) {
+        removeDomAppender(child);
+        child.parent = a;
 
-    if (child.root.parentNode !== a.root) {
-        if (a.nextChild === null) {
+        if (a.cursor === null) {
+            // no cursor; insert new children at the end
             a.root.appendChild(child.root)
+            if (a.firstChild === null) {
+                assert(a.lastChild === null);
+                a.firstChild = child;
+                a.lastChild = child;
+                assert(child.previousSibling === null)
+                assert(child.nextSibling === null)
+            } else {
+                assert(a.lastChild !== null);
+                a.lastChild.nextSibling = child;
+                child.previousSibling = a.lastChild;
+                a.lastChild = child;
+                assert(child.nextSibling === null)
+            }
         } else {
-            a.root.insertBefore(child.root, a.nextChild)
+            // insert new children before the cursor
+            a.root.insertBefore(child.root, a.cursor.root)
+
+            if (a.firstChild === a.cursor) {
+                a.firstChild = child;
+            }
+            child.nextSibling = a.cursor;
+            child.previousSibling = a.cursor.previousSibling;
+            if (child.previousSibling !== null) {
+                child.previousSibling.nextSibling = child;
+            }
+            child.nextSibling.previousSibling = child;
         }
     } else {
         // child is already under a, so doesn't need insertion. 
         // We still need to detach dom nodes between `nextChild` and `child`.
-        while (a.nextChild !== null && a.nextChild !== child.root) {
-            const nextChild = a.nextChild.nextSibling;
-            a.nextChild.remove();
-            a.nextChild = nextChild as AppendableElement;
+        while (a.cursor !== null && a.cursor !== child) {
+            const nextChild = a.cursor.nextSibling;
+            a.cursor.root.remove();
+            removeDomAppender(a.cursor);
+            a.cursor = nextChild;
         }
 
-        // Iterate the thing
-        if (a.nextChild !== null) {
-            a.nextChild = a.nextChild.nextSibling as AppendableElement;
+        // Iterate our cursor
+        if (a.cursor !== null) {
+            a.cursor = a.cursor.nextSibling;
         }
 
         // Due to how im-core works, we'll mainly try to handle insertion/removal properly
@@ -126,20 +164,59 @@ function appendToDomRoot(a: DomAppender<ValidElement> | null, child: DomAppender
         // moved and not really deterministic/ understandable in practice.
     }
 
-    // turns out to be quite an expensive assertion, so I've commented it out for now
-    // assert(child.root.parentNode === a.root);
+    // assert invariants
+    /*
+    {
+        {
+            let item = a.firstChild;
+            let i = 0;
+            while (item !== null) {
+                i++;
+                if (i > 10000) throw new Error("BRUH")
+                assert(item.parent === a);
+                item = item.nextSibling;
+            }
+        }
+
+        {
+            let item = a.lastChild;
+            let i = 0;
+            while (item !== null) {
+                i++;
+                if (i > 10000) throw new Error("BRUH2")
+                assert(item.parent === a);
+                item = item.previousSibling;
+            }
+        }
+    } // */
+}
+
+// NOTE: when child.parent.cursor === child, `a.cursor` will be cleared to null.
+function removeDomAppender(child: DomAppender<AppendableElement>) {
+    if (child.parent !== null) {
+        if (child.parent.firstChild === child) { child.parent.firstChild = child.nextSibling; }
+        if (child.parent.cursor === child)     { child.parent.cursor = child.nextSibling; }
+        if (child.parent.lastChild === child)  { child.parent.lastChild = child.previousSibling; }
+        if (child.nextSibling !== null)        { child.nextSibling.previousSibling = child.previousSibling; }
+        if (child.previousSibling !== null)    { child.previousSibling.nextSibling = child.nextSibling }
+        child.parent          = null;
+        child.nextSibling     = null;
+        child.previousSibling = null;
+    }
 }
 
 function finalizeDomAppender(a: DomAppender<ValidElement>) {
-    if (a.manualDom !== true) {
-        // by the time we get here, the dom nodes we want have already been appended in the right order, and
-        // `a.children` should be pretty much identical to what is in the DOM. 
-        // We just need to remove the children we didn't render this time
-        while (a.nextChild !== null) {
-            const nextChild = a.nextChild.nextSibling;
-            a.nextChild.remove();
-            a.nextChild = nextChild as AppendableElement;
-        }
+    if (a.manualDom === true) return;
+
+    // by the time we get here, the dom nodes we want have already been appended in the right order, and
+    // `a.children` should be pretty much identical to what is in the DOM. 
+    // We just need to remove the children we didn't render this time
+    while (a.cursor !== null) {
+        const nextCursor = a.cursor.nextSibling;
+        a.cursor.root.remove();
+        assert(a.cursor.parent !== null)
+        removeDomAppender(a.cursor);
+        a.cursor = nextCursor;
     }
 }
 
@@ -170,8 +247,14 @@ function imElBeginOffscreen<K extends keyof HTMLElementTagNameMap>(
 }
 
 function beginDomAppender(childAppender: DomAppender<ValidElement>) {
-    if (childAppender.isAppendable) {
-        childAppender.nextChild = childAppender.root.firstChild as AppendableElement;
+    if (childAppender.isAppendable === true) {
+        childAppender.cursor = childAppender.firstChild as DomAppender<ValidElement> | null;
+        if (childAppender.firstChild) {
+            assert(childAppender.firstChild.previousSibling === null);
+        }
+        if (childAppender.lastChild) {
+            assert(childAppender.lastChild.nextSibling === null);
+        }
     }
 }
 

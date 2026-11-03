@@ -265,7 +265,7 @@ test.group("Dom in-place diffing logic", [], () => {
 
         const { c, root } = newTestState();
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             if (i % 2 === 0) {
                 render(c, root, false);
                 testChildCount(r, root, 1);
@@ -294,7 +294,7 @@ test.group("Dom in-place diffing logic", [], () => {
 
         const { c, root } = newTestState();
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             if (i % 2 === 0) {
                 render(c, root, false);
                 testChildCount(r, root, 1);
@@ -305,6 +305,62 @@ test.group("Dom in-place diffing logic", [], () => {
                 testChildTextAt(r, root, 0, "A");
                 testChildTextAt(r, root, 1, "B");
                 testChildTextAt(r, root, 2, "C");
+            }
+        }
+    });
+
+    test.add("Replacement - one item", r => {
+        function render(c: ImCache, root: HTMLElement, renderA: boolean) {
+            imTestBegin(r, c, root); {
+                if (im.If(c) && renderA) {
+                    imTextEl(r, c, "A");
+                } else {
+                    im.Else(c);
+                    imTextEl(r, c, "B");
+                } im.IfEnd(c);
+            } imTestEnd(c, root, r);
+        }
+
+        const { c, root } = newTestState();
+
+        for (let i = 0; i < 4; i++) {
+            if (i % 2 === 0) {
+                render(c, root, false);
+                testChildCount(r, root, 1);
+                testChildTextAt(r, root, 0, "B");
+            } else {
+                render(c, root, true);
+                testChildCount(r, root, 1);
+                testChildTextAt(r, root, 0, "A");
+            }
+        }
+    });
+
+    test.add("[debug] Replacement - two items", r => {
+        function render(c: ImCache, root: HTMLElement, renderA: boolean) {
+            imTestBegin(r, c, root); {
+                if (im.If(c) && renderA) {
+                    imTextEl(r, c, "A");
+                } else {
+                    im.Else(c);
+                    imTextEl(r, c, "B");
+                    imTextEl(r, c, "C");
+                } im.IfEnd(c);
+            } imTestEnd(c, root, r);
+        }
+
+        const { c, root } = newTestState();
+
+        for (let i = 0; i < 4; i++) {
+            if (i % 2 === 0) {
+                render(c, root, true);
+                testChildCount(r, root, 1);
+                testChildTextAt(r, root, 0, "A");
+            } else {
+                render(c, root, false);
+                testChildCount(r, root, 2);
+                testChildTextAt(r, root, 0, "B");
+                testChildTextAt(r, root, 1, "C");
             }
         }
     });

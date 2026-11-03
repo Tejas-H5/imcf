@@ -15,6 +15,7 @@ export type Result = {
 
 	// Need some way to verify that something happened at all.
 	// But this should be the fast path, so we're not literally logging a bunch of strings for passes.
+	checksSection: string;
 	checks: number; 
 	time: number;
 
@@ -49,6 +50,9 @@ export function check(r: Result, outcome: boolean, message = ""): boolean {
 	if (!outcome) {
 		if (!message) {
 			message = "check " + r.checks;
+			if (r.checksSection) {
+				message = r.checksSection + ", " + message;
+			}
 		}
 
 		failure(r, "Check failed - " + message);
@@ -139,6 +143,11 @@ export function failure(r: Result, message: string, optMessage?: string) {
 	r.fails.push(message);
 }
 
+export function section(r: Result, name: string) {
+	r.checksSection = name;
+	r.checks        = 0;
+}
+
 export function add(name: string, fn: ((r: Result) => void | Promise<void>), g?: Group) {
 	if (!g) g = groups[groups.length - 1];
 
@@ -149,6 +158,7 @@ export function add(name: string, fn: ((r: Result) => void | Promise<void>), g?:
 	const test: Result = {
 		name,
 		fails: undefined,
+		checksSection: "",
 		checks: 0,
 		time: 0,
 		fn,

@@ -45,24 +45,24 @@ const CACHE_IDX                           = 17;
 const CACHE_ENTRIES_START                 = 18; // Not in the struct implementation, but we'll need it for the array implementation
 
 
+const ENTRIES_STARTED_RENDERING               = 0;
 const ENTRIES_REMOVE_LEVEL                    = 1;
 const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 2;
 const ENTRIES_IS_DERIVED                      = 3;
 const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
-const ENTRIES_STARTED_RENDERING               = 5;
-const ENTRIES_DESTRUCTORS                     = 6;
-const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 7;
-const ENTRIES_KEYED_MAP                       = 8;
+const ENTRIES_DESTRUCTORS                     = 5;
+const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
+const ENTRIES_KEYED_MAP                       = 7;
 // NOTE: ENTRIES_PARENT_TYPE and ENTRIES_PARENT_VALUE have now been completely removed.
 // Tree structures should be modelled on the adapter side using a stack.
 // This way, a static tree structure that takes a fixed number of elements can still
 // just be backed by a singuler contiguous array in memory!
-const ENTRIES_INTERNAL_TYPE                   = 9;
-const ENTRIES_LAST_IDX                        = 10;
-const ENTRIES_IDX                             = 11;
-const ENTRIES_FIRST_RENDER_QUERY_COUNT        = 12;
-const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 13;
-const ENTRIES_ITEMS_START                     = 14; // Not in the struct implementation, but we'll need it for the array implementation
+const ENTRIES_INTERNAL_TYPE                   = 8;
+const ENTRIES_LAST_IDX                        = 9;
+const ENTRIES_IDX                             = 10;
+const ENTRIES_FIRST_RENDER_QUERY_COUNT        = 11;
+const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 12;
+const ENTRIES_ITEMS_START                     = 13; // Not in the struct implementation, but we'll need it for the array implementation
 
 function newCache(): ImCache {
     const c: ImCache = new Array(CACHE_ENTRIES_START)
