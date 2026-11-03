@@ -22,27 +22,62 @@ import { assert } from "./assert";
 //    static analysis tool - it would speed up the process...
 
 
-// I no longer export these - It should be easy to toggle between the array implementation and the object
-// implementation, so only getters and setters get exported
-const CACHE_FPS_COUNTER_STATE             = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
-const CACHE_RERENDER_FN                   = 1;
-const CACHE_ANIMATION_TIME_LAST           = 2;
-const CACHE_ANIMATION_DELTA_TIME_SECONDS  = 3;
-const CACHE_TOTAL_DESTRUCTORS             = 4; // Useful memory leak indicator
-const CACHE_IS_ANIMATION_FRAME            = 5;
-const CACHE_NEEDS_RERENDER                = 6;
-const CACHE_ITEMS_ITERATED                = 7;
-const CACHE_IS_RENDERING                  = 8;
-const CACHE_TOTAL_MAP_ENTRIES             = 9; // Useful memory leak indicator
-const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME  = 10; // Useful memory leak indicator
-const CACHE_ITEMS_ITERATED_LAST_FRAME     = 11; // Useful performance metric
-const CACHE_PARENT_STACK                  = 12;
-const CACHE_RENDER_COUNT                  = 13;
-const CACHE_CURRENT_WAITING_FOR_SET       = 14;
-const CACHE_ROOT_ENTRIES                  = 15;
-const CACHE_CURRENT_ENTRIES               = 16;
-const CACHE_IDX                           = 17;
-const CACHE_ENTRIES_START                 = 18; // Not in the struct implementation, but we'll need it for the array implementation
+export type ImCache = {
+    // its pairs of [typeId, value] but stored linearly.
+    // this stack is orthogonal to the other imCacheEntries stack
+    parentStack: any[];
+    rootEntries: ImCacheEntries;
+    // We only need a new entry list whenever there's a dynamic bit in 
+    // the parent stack i.e conditional rendering or list rendering.
+    stack: ImCacheEntries[];
+    // starts at -1 and increments onto the current value. So we can keep accessing this idx over and over without doing idx - 1.
+    // NOTE: memory access is supposedly far slower than math. So might not matter too much
+
+    renderFn: ImCacheRerenderFn;
+    animationTimeLast: number;
+    animationDeltaTimeSeconds: number;
+    isAnimationFrame: boolean;
+    needsRerender: boolean;
+    isRendering: boolean;
+
+    // Useful memory leak indicators.
+    totalDestructors: number;
+    totalMapEntries: number;
+    totalMapEntriesLastFrame: number;
+    itemsIterated: number;
+    itemsIteratedLastFrame: number;
+    fpsCounterState: FpsCounterState;
+    renderCount: number;
+    currentlyWaitingForSet: boolean;
+}
+
+function stubRenderFn() {
+}
+
+function newCache(): ImCache {
+    const rootEntries = newCacheEntries(INTERNAL_TYPE_CACHE);
+    return {
+        parentStack: [],
+        stack: [],
+        rootEntries: rootEntries,
+
+        renderFn: stubRenderFn,
+        animationTimeLast: 0,
+        animationDeltaTimeSeconds: 0,
+        isAnimationFrame: false,
+        needsRerender: false,
+        isRendering: false,
+        currentlyWaitingForSet: false,
+
+        totalDestructors: 0,
+        totalMapEntries: 0,
+        totalMapEntriesLastFrame: 0,
+        itemsIterated: 0,
+        itemsIteratedLastFrame: 0,
+        renderCount: 0,
+        fpsCounterState: newFpsCounterState(),
+    };
+}
 
 
 const ENTRIES_STARTED_RENDERING               = 0;
@@ -64,50 +99,25 @@ const ENTRIES_FIRST_RENDER_QUERY_COUNT        = 11;
 const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 12;
 const ENTRIES_ITEMS_START                     = 13; // Not in the struct implementation, but we'll need it for the array implementation
 
-function newCache(): ImCache {
-    const c: ImCache = new Array(CACHE_ENTRIES_START)
-        .fill(undefined) as ImCache;
-
-    // starts at -1 and increments onto the current value. So we can keep accessing this idx over and over without doing idx - 1.
-    // NOTE: memory access is supposedly far slower than math. So might not matter too much
-    c[CACHE_IDX] = 0;
-    c[CACHE_ROOT_ENTRIES] = newCacheEntries(INTERNAL_TYPE_CACHE);
-    c[CACHE_CURRENT_ENTRIES] = c[CACHE_ROOT_ENTRIES];
-    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
-    c[CACHE_NEEDS_RERENDER] = false;
-    c[CACHE_ITEMS_ITERATED] = 0;
-    c[CACHE_ITEMS_ITERATED_LAST_FRAME] = 0;
-    c[CACHE_TOTAL_DESTRUCTORS] = 0;
-    c[CACHE_TOTAL_MAP_ENTRIES] = 0;
-    c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME] = 0;
-    c[CACHE_IS_RENDERING] = false; 
-    c[CACHE_RENDER_COUNT] = 0;
-    c[CACHE_FPS_COUNTER_STATE] = newFpsCounterState();
-    c[CACHE_PARENT_STACK] = [];
-    c[CACHE_ANIMATION_TIME_LAST] = 0;
-    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
-
-    return c;
-}
-
 function getItemsIterated(c: ImCache): number {
-    return c[CACHE_ITEMS_ITERATED_LAST_FRAME];
+    return c.itemsIteratedLastFrame;
 }
 
 function getTotalMapEntries(c: ImCache): number {
-    return c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME];
+    return c.totalMapEntriesLastFrame;
 }
 
 function getTotalDestructors(c: ImCache): number {
-    return c[CACHE_TOTAL_DESTRUCTORS];
+    return c.totalDestructors;
 }
 
 function getCurrentCacheEntries(c: ImCache) {
-    return c[CACHE_CURRENT_ENTRIES] as unknown as ImCacheEntries;
+    assert(c.stack.length > 0)
+    return c.stack[c.stack.length - 1];
 }
 
 function getRootEntries(c: ImCache): ImCacheEntries {
-    return c[CACHE_ROOT_ENTRIES];
+    return c.rootEntries;
 }
 
 function getEntriesRemoveLevel(entries: ImCacheEntries) {
@@ -119,16 +129,10 @@ function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
 }
 
 function getStackLength(c: ImCache) {
-    return c.length - CACHE_ENTRIES_START;
+    return c.stack.length;
 }
 
 
-/**
- * Allows us to cache state for our immediate mode callsites.
- * Initialize this on your end with `const cache: Cache = [];`. It's just an array
- * TODO: better typing here
- */
-export type ImCache = (ImCacheEntries | any)[]; 
 export type ImCacheEntries = any[] & { __CacheEntries: void };
 
 export type FpsCounterState = {
@@ -226,78 +230,73 @@ export type ImCacheRerenderFn = (c: ImCache) => void;
 function imCacheBegin(c: ImCache, isAnimationFrame: boolean = true) {
     const fpsState = getFpsCounterState(c);
 
-    c[CACHE_IS_ANIMATION_FRAME] = isAnimationFrame;
+    c.isAnimationFrame = isAnimationFrame;
     if (isAnimationFrame) {
         fpsMarkRenderingStart(fpsState);
     }
     fpsState.renderCount += 1;
 
-    c[CACHE_NEEDS_RERENDER] = false;
-    c[CACHE_IS_RENDERING] = true; 
-    c[CACHE_IDX] = CACHE_ENTRIES_START - 1;
-    c[CACHE_ITEMS_ITERATED_LAST_FRAME] = c[CACHE_ITEMS_ITERATED];
-    c[CACHE_ITEMS_ITERATED] = 0;
-    c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME] = c[CACHE_TOTAL_MAP_ENTRIES];
-    c[CACHE_TOTAL_MAP_ENTRIES] = 0;
-    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
-    c[CACHE_RENDER_COUNT]++;
+    c.stack.length = 0;
+    c.needsRerender = false;
+    c.isRendering = true; 
+    c.itemsIteratedLastFrame = c.itemsIterated;
+    c.itemsIterated = 0;
+    c.totalMapEntriesLastFrame = c.totalMapEntries;
+    c.totalMapEntries = 0;
+    c.currentlyWaitingForSet = false;
+    c.renderCount++;
 
     // Deltatime should naturally reach 0 on 'rerenders'. Not sure how it will work for manual rendering.
     const now = performance.now();
-    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (now - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
-    c[CACHE_ANIMATION_TIME_LAST] = now;
+    c.animationDeltaTimeSeconds = (now - c.animationTimeLast) / 1000;
+    c.animationTimeLast = now;
 
-    imCacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], INTERNAL_TYPE_CACHE);
+    imCacheEntriesBegin(c, c.rootEntries, INTERNAL_TYPE_CACHE);
 
     return c;
 }
 
 function getFpsCounterState(c: ImCache): FpsCounterState {
-    assert(c[CACHE_FPS_COUNTER_STATE] != null);
-    return c[CACHE_FPS_COUNTER_STATE];
+    assert(c.fpsCounterState != null);
+    return c.fpsCounterState;
 }
 
 // Enqueues a cache rerender. Usually to process an event again after the 
 // current render without waiting for the next animation frame, or rerender once outside the animation frame.
 function rerenderCache(c: ImCache) {
-    if (c[CACHE_IS_RENDERING] === true) {
-        c[CACHE_NEEDS_RERENDER] = true;
+    if (c.isRendering === true) {
+        c.needsRerender = true;
     } else {
-        c[CACHE_NEEDS_RERENDER] = false;
-        c[CACHE_RERENDER_FN](c);
+        c.needsRerender = false;
+        c.renderFn(c);
     }
 }
-
-function noOp() {}
 
 function imCacheEnd(c: ImCache) {
     imCacheEntriesEnd(c);
 
-    const startIdx = CACHE_ENTRIES_START - 1;
-    if (c[CACHE_IDX] > startIdx) {
-        console.error("You've forgotten to pop some things: ", c.slice(startIdx + 1));
+    if (c.stack.length > 0) {
+        console.error("You've forgotten to pop some things: ", c.stack);
         throw new Error("You've forgotten to pop some things");
-    } else if (c[CACHE_IDX] < startIdx) {
-        throw new Error("You've popped too many thigns off the stack!!!!");
     }
 
-    c[CACHE_IS_RENDERING] = false;
+    c.isRendering = false;
 
     // Some things may occur while we're rendering the framework that require is to immediately rerender
     // our components to not have a stale UI. Those events will set this flag to true, so that
     // We can eventually reach here, and do a full rerender.
-    const needsRerender = c[CACHE_NEEDS_RERENDER];
+    const needsRerender = c.needsRerender;
 
     if (needsRerender === true) {
-        c[CACHE_NEEDS_RERENDER] = false;
+        c.needsRerender = false;
 
         // Other things need to rerender the cache long after we've done a render. Mainly, DOM UI events - 
         // once we get the event, we trigger a full rerender, and pull the event out of state and use it's result in the process.
         rerenderCache(c);
     }
 
-    if (c[CACHE_IS_ANIMATION_FRAME] === true) {
-        fpsMarkRenderingEnd(c[CACHE_FPS_COUNTER_STATE]);
+    if (c.isAnimationFrame === true) {
+        fpsMarkRenderingEnd(c.fpsCounterState);
     }
 }
 
@@ -331,15 +330,7 @@ function imCacheEntriesBegin<T>(
 ) {
     assert(entries[ENTRIES_INTERNAL_TYPE] === internalType, CONDITIONAL_RENDERING_ERROR_MESSAGE);
 
-    c[CACHE_IDX] += 1;
-    const idx = c[CACHE_IDX];
-    if (idx === c.length) {
-        c.push(entries);
-    } else {
-        c[idx] = entries;
-    }
-
-    c[CACHE_CURRENT_ENTRIES] = entries;
+    c.stack.push(entries);
 
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
     entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
@@ -356,10 +347,14 @@ function imCacheEntriesBegin<T>(
 }
 
 function imCacheEntriesEnd(c: ImCache) {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    if (c.stack.length === 0) {
+        throw new Error("You've popped too many thigns off the stack!!!!");
+    }
+
+    const entries = c.stack[c.stack.length - 1];
     let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
     if (map !== undefined) {
-        c[CACHE_TOTAL_MAP_ENTRIES] += map.size;
+        c.totalMapEntries += map.size;
 
         const removeLevel = entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL];
         if (removeLevel === REMOVE_LEVEL_DETATCHED) {
@@ -394,26 +389,24 @@ function imCacheEntriesEnd(c: ImCache) {
         }
     }
 
-    idx = --c[CACHE_IDX];
-    c[CACHE_CURRENT_ENTRIES] = c[idx];
-    assert(idx >= CACHE_ENTRIES_START - 1);
+    c.stack.pop();
     return entries;
 }
 
 function pushParent<T>(c: ImCache, type: TypeId<T>, val: T) {
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
     parents.push(type);   // TypeId
     parents.push(val);    // Actual value.
 }
 
 function popParent<T>(c: ImCache, type: TypeId<T>) {
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
     assert(parents[parents.length - 2] === type);
     parents.length -= 2;
 }
 
 function getParent<T>(c: ImCache, type: TypeId<T>): T {
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
 
     // Make sure you're calling this immediate-mode function in the right context.
     assert(parents[parents.length - 2] === type);
@@ -422,7 +415,7 @@ function getParent<T>(c: ImCache, type: TypeId<T>): T {
 }
 
 function getParentOrUndefined<T>(c: ImCache, type: TypeId<T>): T | undefined {
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
     if (parents[parents.length - 2] === type) {
         return parents[parents.length - 1] as T;
     }
@@ -430,12 +423,12 @@ function getParentOrUndefined<T>(c: ImCache, type: TypeId<T>): T | undefined {
 }
 
 function getNumParents(c: ImCache): number {
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
     return parents.length;
 }
 
 function imIsFirstRender(c: ImCache): boolean {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
 
     let result = false;
 
@@ -505,10 +498,10 @@ function imGet<T>(
     typeId: TypeId<T>,
     initialValue: T | undefined = undefined
 ): T | undefined {
-    const entries = c[CACHE_CURRENT_ENTRIES];
-    c[CACHE_ITEMS_ITERATED]++;
+    const entries = getCurrentCacheEntries(c);
+    c.itemsIterated++;
 
-    if (c[CACHE_CURRENT_WAITING_FOR_SET] !== false) {
+    if (c.currentlyWaitingForSet !== false) {
         throw new Error("The previous call to imGet was not paired with a call to imSet");
     }
 
@@ -535,7 +528,7 @@ function imGet<T>(
     } else if (idx === entries.length) {
         entries.push(typeId);
         entries.push(initialValue);
-        c[CACHE_CURRENT_WAITING_FOR_SET] = true;
+        c.currentlyWaitingForSet = true;
     } else {
         throw new Error("Shouldn't reach here");
     }
@@ -582,7 +575,7 @@ function onMaybeStartedRenderingEntries(c: ImCache, entries: ImCacheEntries) {
  * ```
  */
 function isSetRequired(c: ImCache): boolean {
-    return c[CACHE_CURRENT_WAITING_FOR_SET];
+    return c.currentlyWaitingForSet;
 }
 
 /**
@@ -635,8 +628,8 @@ function imState<T>(c: ImCache, fn: () => T): T {
 }
 
 function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
-    const entries = c[CACHE_CURRENT_ENTRIES];
-    const type = entries.at(ENTRIES_ITEMS_START + idx);
+    const entries = getCurrentCacheEntries(c);
+    const type = entries[ENTRIES_ITEMS_START + idx]
     if (type !== typeId) {
         throw new Error("Didn't find <typeId::" + typeId.name + "> at " + idx);
     }
@@ -646,10 +639,10 @@ function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
 }
 
 function imSet<T>(c: ImCache, val: T): T {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
     const idx = entries[ENTRIES_IDX];
     entries[idx + 1] = val;
-    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
+    c.currentlyWaitingForSet = false;
     return val;
 }
 
@@ -659,7 +652,7 @@ export type ListMapBlock = { rendered: boolean; entries: ImCacheEntries; };
  * Creates an entry in the _Parent's_ keyed elements map.
  */
 function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel) {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
     entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = removeLevel;
 
     onMaybeStartedRenderingEntries(c, entries);
@@ -731,7 +724,7 @@ function imKeyedEnd(c: ImCache) {
 // can be done once at the global level by one system. 
 // Something similar can be said about making network requests, local storage requests, web sockets, and so on.
 function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
     let destructors = entries[ENTRIES_DESTRUCTORS];
     if (destructors === undefined) {
         destructors = [];
@@ -739,7 +732,7 @@ function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
     }
 
     destructors.push(destructor);
-    c[CACHE_TOTAL_DESTRUCTORS]++;
+    c.totalDestructors++;
 }
 
 function cacheEntriesOnRemove(entries: ImCacheEntries) {
@@ -824,7 +817,7 @@ function cacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
             for (const d of destructors) {
                 try {
                     d();
-                    c[CACHE_TOTAL_DESTRUCTORS]--;
+                    c.totalDestructors--;
                 } catch (e) {
                     console.error("A destructor threw an error: ", e);
                 }
@@ -866,7 +859,7 @@ function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_T
 }
 
 function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
 
     if (entries[ENTRIES_INTERNAL_TYPE] !== internalType) {
         const message = `Opening and closing blocks may not be lining up right. You may have missed or inserted some blocks by accident. `
@@ -878,7 +871,7 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
 }
 
 function isAnimationFrame(c: ImCache): boolean {
-    return c[CACHE_IS_ANIMATION_FRAME] === true;
+    return c.isAnimationFrame === true;
 }
 
 
@@ -1004,7 +997,7 @@ function __BlockConditionalBegin(c: ImCache) {
 }
 
 function __BlockConditionalEnd(c: ImCache) {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
     if (entries[ENTRIES_STARTED_RENDERING] === false) {
         // Not rendering to the cache entries is the signal to remove everything rendered under it last. 
         cacheEntriesOnRemove(entries);
@@ -1022,7 +1015,7 @@ function imForEnd(c: ImCache) {
 }
 
 function __BlockArrayEnd(c: ImCache) {
-    const entries = c[CACHE_CURRENT_ENTRIES]
+    const entries = getCurrentCacheEntries(c)
 
     const idx = entries[ENTRIES_IDX];
     const lastIdx = entries[ENTRIES_LAST_IDX];
@@ -1121,7 +1114,7 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
 
     let result: MemoResult = MEMO_NOT_CHANGED;
 
-    const entries = c[CACHE_CURRENT_ENTRIES];
+    const entries = getCurrentCacheEntries(c);
 
     let lastVal = imGet(c, inlineTypeId(imMemo), IM_MEMO_FIRST_EVER);
     if (lastVal !== val) {
@@ -1167,7 +1160,7 @@ export type TryState = {
  * ```
  */
 function imTry(c: ImCache): TryState {
-    if (c[CACHE_RERENDER_FN] === undefined) {
+    if (c.renderFn === stubRenderFn) {
         throw new Error("Using imTry requires having set up a rerender method with im.setRenderFn - we need to rerender your state one more time at the very end if an error was thrown");
     }
 
@@ -1202,55 +1195,55 @@ function imCatch(c: ImCache, tryState: TryState, err: any) {
         throw new Error("Your error boundary pathway also has an error in it, so we can't recover!");
     }
 
-    c[CACHE_NEEDS_RERENDER] = true;
+    c.needsRerender = true;
     tryState.err = err;
 
-    const idx = c.lastIndexOf(tryState.entries);
+    const idx = c.stack.lastIndexOf(tryState.entries);
     if (idx === -1) {
         throw new Error("Couldn't find the entries in the stack to unwind to!");
     }
 
-    const parents = c[CACHE_PARENT_STACK];
+    const parents = c.parentStack;
     parents.length = tryState.parentIdx;
 
-    c[CACHE_IDX] = idx - 1;
-    c[CACHE_CURRENT_ENTRIES] = c[idx - 1];
-    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
+    c.stack.length = idx + 1;
+    c.currentlyWaitingForSet = false;
 }
 
 function imTryEnd(c: ImCache, tryState: TryState) {
     if (tryState.unwoundThisFrame === true) {
         // nothing to end.
-        assert(c[c[CACHE_IDX] + 1] === tryState.entries);
+        assert(getCurrentCacheEntries(c) === tryState.entries);
+        imCacheEntriesEnd(c);
     } else {
-        const entries = c[CACHE_CURRENT_ENTRIES];
+        const entries = getCurrentCacheEntries(c);
         assert(entries === tryState.entries);
         imImmediateModeBlockEnd(c, INTERNAL_TYPE_TRY_BLOCK);
     }
 }
 
 function getDeltaTimeSeconds(c: ImCache): number {
-    return Math.min(0.05, c[CACHE_ANIMATION_DELTA_TIME_SECONDS]);
+    return Math.min(0.05, c.animationDeltaTimeSeconds);
 }
 
 // Events can trigger rerenders in the same frame.
 function getRenderCount(c: ImCache) {
-    return c[CACHE_RENDER_COUNT];
+    return c.renderCount;
 }
 
 function setRenderFn(c: ImCache, imRenderFn: ImCacheRerenderFn) {
-    if (c[CACHE_RERENDER_FN] === undefined) {
-        c[CACHE_RERENDER_FN] = imRenderFn;
-    } else if (c[CACHE_RERENDER_FN] !== imRenderFn) {
+    if (c.renderFn === stubRenderFn) {
+        c.renderFn = imRenderFn;
+    } else if (c.renderFn !== imRenderFn) {
         console.log("hot-swapping render function");
 
-        cacheEntriesOnDestroy(c, c[CACHE_ROOT_ENTRIES]);
-        c[CACHE_RERENDER_FN] = imRenderFn;
+        cacheEntriesOnDestroy(c, c.rootEntries);
+        c.renderFn = imRenderFn;
 
         try {
             imRenderFn(c);
         } catch {
-            c[CACHE_ROOT_ENTRIES] = newCacheEntries(INTERNAL_TYPE_CACHE);
+            c.rootEntries = newCacheEntries(INTERNAL_TYPE_CACHE);
             // We are already about to renader to our cache, so we don't need to call
             // imRenderFn(c); here
         }
@@ -1266,7 +1259,6 @@ export const im = {
     CacheBegin: imCacheBegin, CacheEnd: imCacheEnd,
 
     /** Internal methods and variables */
-    CACHE_ENTRIES_START, // Offset into an Imcache where the actual entries start
     ENTRIES_ITEMS_START, // Offset into an ImCacheEntries where the actual items start
 
     /** State management - all different flavours of im.Get/im.Set */

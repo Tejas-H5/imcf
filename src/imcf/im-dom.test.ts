@@ -336,7 +336,7 @@ test.group("Dom in-place diffing logic", [], () => {
         }
     });
 
-    test.add("[debug] Replacement - two items", r => {
+    test.add("Replacement - two items", r => {
         function render(c: ImCache, root: HTMLElement, renderA: boolean) {
             imTestBegin(r, c, root); {
                 if (im.If(c) && renderA) {
