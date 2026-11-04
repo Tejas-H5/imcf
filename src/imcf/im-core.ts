@@ -23,15 +23,17 @@ import { assert } from "./assert";
 
 
 export type ImCache = {
-    // its pairs of [[typeId, value],...] but stored linearly.
-    // this stack is orthogonal to the other imCacheEntries stack
+    /** 
+     * its pairs of [[typeId, value],...] but stored linearly.
+     * this stack is orthogonal to the other imCacheEntries stack
+     */
     parentStack: unknown[];
     rootEntries: ImCacheEntries;
-    // We only need a new entry list whenever there's a dynamic bit in 
-    // the parent stack i.e conditional rendering or list rendering.
+    /**
+     * We only need a new entry list whenever there's a dynamic bit in 
+     * the parent stack i.e conditional rendering or list rendering.
+     */
     stack: ImCacheEntries[];
-    // starts at -1 and increments onto the current value. So we can keep accessing this idx over and over without doing idx - 1.
-    // NOTE: memory access is supposedly far slower than math. So might not matter too much
 
     renderFn: ImCacheRerenderFn;
     animationTimeLast: number;
@@ -39,16 +41,17 @@ export type ImCache = {
     isAnimationFrame: boolean;
     needsRerender: boolean;
     isRendering: boolean;
+    currentlyWaitingForSet: boolean;
+    renderCount: number;
 
     // Useful memory leak indicators.
+    
     totalDestructors: number;
     totalMapEntries: number;
     totalMapEntriesLastFrame: number;
     itemsIterated: number;
     itemsIteratedLastFrame: number;
     fpsCounterState: FpsCounterState;
-    renderCount: number;
-    currentlyWaitingForSet: boolean;
 }
 
 function stubRenderFn() {
@@ -80,8 +83,10 @@ function newCache(): ImCache {
 }
 
 export type ImCacheEntries = {
-    // An array of pairs [[typeId<T>, T]|...]
+    /** An array of pairs [[typeId<T>, T]|...] */
     entries: unknown[];
+    lastIdx: number;
+    idx: number;
 
     startedRendering: boolean;
     isInConditionalPathway: boolean;
@@ -89,8 +94,7 @@ export type ImCacheEntries = {
     internalType: number;
     removeLevel: RemoveLevel;
 
-    lastIdx: number;
-    idx: number;
+    /** To support imIsFirstRender */
     firstRenderQueryCount: number;
     prevFirstRenderQueryCount: number;
 
@@ -179,7 +183,7 @@ const REMOVE_LEVEL_DETATCHED = 2;
 // This is the default for im-keyed map entries. This is because we can key components on arbitrary values. 
 // It is common (and intended behaviour) to use object references directly as keys.
 // However, if those objects are constantly created and destroyed, this can pose a problem for REMOVE_LEVEL_DETATCHED. 
-// Using REMOVE_LEVEL_DESTROYED instead allows the map to clean up and remove those keys, so 
+// Using REMOVE_LEVEL_DESTROYED instead allows the map to destroy and remove unused keys, so 
 // that the size of the map isn't constantly increasing.
 const REMOVE_LEVEL_DESTROYED = 3;
 
@@ -188,18 +192,20 @@ export type RemoveLevel
     | typeof REMOVE_LEVEL_DETATCHED   
     | typeof REMOVE_LEVEL_DESTROYED;
 
-// TypeIDs allow us to provide some basic sanity checks and protection
-// against the possiblity of data corruption that can happen when im-state is accessed 
-// conditionally or out of order. The idea is that rather than asking you to pass in 
-// some random number, or to save a bunch of type ID integers everywhere, you can 
-// just pass in a reference to a function to uniquely identify a piece of state.
-// You probably have a whole bunch of them lying around somewhere.
-// The function that you are creating the state from, for example. 
-// The return value of the function can be used to infer the return value of
-// the {@link GetsState} call, but it can also be a completely unrelated function
-// - in which case you can just use {@link InlineTypeId}. As long as a function
-// has been uniquely used within a particular entry list at a particular slot, the 
-// likelyhood of out-of-order rendering errors will reduce to almost 0.
+/**
+ * TypeIDs allow us to provide some basic sanity checks and protection
+ * against the possiblity of data corruption that can happen when im-state is accessed 
+ * conditionally or out of order. The idea is that rather than asking you to pass in 
+ * some random number, or to save a bunch of type ID integers everywhere, you can 
+ * just pass in a reference to a function to uniquely identify a piece of state.
+ * You probably have a whole bunch of them lying around somewhere.
+ * The function that you are creating the state from, or the one that the code is in, for example. 
+ * The return value of the function can be used to infer the return value of
+ * the {@link imGet} call, but it can also be a completely unrelated function
+ * - in which case you can just use {@link imGetInline}. As long as a function
+ * has been uniquely used within a particular entry list at a particular slot, the 
+ * likelyhood of out-of-order rendering errors will reduce to almost 0.
+ */
 export type TypeId<T> = (...args: any[]) => T;
 
 /**
@@ -217,10 +223,13 @@ function inlineTypeId<T = undefined>(fn: Function) {
     return fn as TypeId<T>;
 }
 
-// Can be any valid object reference. Or string, but avoid string if you can - string comparisons are slower than object comparisons
+/** 
+ * Can be any valid object reference or primitive. 
+ * Rather than obj.id, just obj by itself is fine if you know it's stable. 
+ */
 export type ValidKey = string | number | Function | object | boolean | null | unknown;
 
-// Any immediate mode function that takes in the cache, and nothing else.
+/** Any immediate mode function that takes in the cache, and nothing else. */
 export type ImCacheRerenderFn = (c: ImCache) => void;
 
 /** 
@@ -264,8 +273,10 @@ function getFpsCounterState(c: ImCache): FpsCounterState {
     return c.fpsCounterState;
 }
 
-// Enqueues a cache rerender. Usually to process an event again after the 
-// current render without waiting for the next animation frame, or rerender once outside the animation frame.
+/**
+ * Enqueues a cache rerender. Usually to process an event again after the 
+ * current render without waiting for the next animation frame, or rerender once outside the animation frame.
+ */
 function rerenderCache(c: ImCache) {
     if (c.isRendering === true) {
         c.needsRerender = true;
@@ -311,7 +322,7 @@ const INTERNAL_TYPE_TRY_BLOCK         = 5;
 const INTERNAL_TYPE_CACHE             = 6;
 const INTERNAL_TYPE_SWITCH_BLOCK      = 7;
 
-// Some common errors will get their own dedicated throw Error insead of a simple assert + comment
+/** Some common errors will get their own dedicated throw Error insead of a simple assert + comment */
 function internalTypeToString(internalType: number): string {
     switch (internalType) {
         case INTERNAL_TYPE_NORMAL_BLOCK:      return "INTERNAL_TYPE_NORMAL_BLOCK";
@@ -436,18 +447,18 @@ function imIsFirstRender(c: ImCache): boolean {
     let result = false;
 
     // NOTE: we can't just do
-    // result = entries[ENTRIES_IS_FIRST_RENDER]; 
-    // entries[ENTRIES_IS_FIRST_RENDER] = false;
+    // result = entries.isFirstRender;
+    // entries.isFirstRender = false;
     //
     // Lots of other immediate-mode methods will call imIsFirstRender to initialize themselves,
     // and they shouldn't need to worry about whether imIsFirstRender has already been queried. 
     //
-    // We also can't just do entries[ENTRIES_IS_FIRST_RENDER] = false; in the call to imCacheEntriesEnd -
+    // We also can't just do entries.isFirstRender = false; in the call to imCacheEntriesEnd -
     // If the component throws before calling this and then recovers, all the calls to imIsFirstRender
     // remain true - this can cause subtle bugs like setting the same style twice, to catastrophic bugs 
     // like double-subscribing event handlers. 
     // (For the longest time, that was the best I could do and this method was called imIsFirstishRender,
-    // I've since realised that I could do better at around version 1.102).
+    // I've since realised that I could do better at around version 1.102 (internal version pre npm)).
 
     // For performance reasons, we're just incrementing a number instead of inserting new entries.
     // If your immediate-mode code was written correctly, it will be identical to just doing
@@ -569,12 +580,12 @@ function onMaybeStartedRenderingEntries(c: ImCache, entries: ImCacheEntries) {
 /**
  * When you have code like this:
  * ```ts
- * if (!Get(c) || valueChanged) imSet(c, value);
+ * if (!im.Get(c) || valueChanged) im.Set(c, value);
  * ```
- * When value could be undefined, it will trigger every frame. You can use SetRequired instead.
+ * When value could be undefined, it will trigger every frame. You can use im.isSetRequired instead.
  * This code will check "allocated or nah" instead of "is the value we have undefined?", which is more correct.
  * ```ts
- * if (SetRequired(c) || valueChanged) imSet(c, value);
+ * if (im.isSetRequired(c) || valueChanged) im.Set(c, value);
  * ```
  */
 function isSetRequired(c: ImCache): boolean {
@@ -1232,6 +1243,7 @@ function getDeltaTimeSeconds(c: ImCache): number {
 }
 
 // Events can trigger rerenders in the same frame.
+// This is the only way you can detect that rn
 function getRenderCount(c: ImCache) {
     return c.renderCount;
 }
