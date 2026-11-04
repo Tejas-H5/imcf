@@ -279,7 +279,7 @@ export function imVisualTestHarness(
         scrollToInstalllation(s, installation)
     }
 
-    if (im.Memo(c, s.currentHoveredInstallation)) {
+    if (im.Memo(c, s.currentHoveredInstallation) === im.MEMO_CHANGED) {
         const currentScrolledInstallation = 
             s.currentHoveredInstallation ??
             s.currentInstallation;

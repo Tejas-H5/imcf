@@ -1110,8 +1110,11 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
      * } MemoEnd();
      * ```
      * It can be done, but I've found that it's a terrible idea in practice.
-     * I had initially thought {@link imMemo} was bad too, but it has turned out to be very useful.
-     * turned out to be very useful, more so even, than Memo2(c, ...manyArgs)
+     * I had initially thought {@link imMemo} was bad too, but it has 
+     * turned out to be very useful, more so even, than imMemo(c, ...manyArgs) - 
+     * Rather than doing im.Memo(c, 50 million things), you end up
+     * thinking about how to coalesce multiple signals into one, and
+     * the code ends up a lot more readable and reuseable.
      */
 
     let result: MemoResult = MEMO_NOT_CHANGED;
