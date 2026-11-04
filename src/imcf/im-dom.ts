@@ -14,7 +14,9 @@ let globalEventSystemRefCount = 0;
 let win = (typeof window === "undefined" ? undefined : window) as Window;
 let doc = (typeof document === "undefined" ? undefined : document) as Document;
 
-// For testing reasons only
+/**
+ * For testing reasons only
+ */
 function setWindow(window: Window) {
     win = window;
     doc = win.document;
@@ -26,37 +28,45 @@ function setWindow(window: Window) {
 export type ValidElement = HTMLElement | SVGElement;
 export type AppendableElement = (ValidElement | Text);
 
-// The children of this dom node get diffed and inserted as soon as you call `EndEl`
+/**
+ * The children of this dom node get diffed and inserted as soon as you call `EndEl`
+ */
 const FINALIZE_IMMEDIATELY = 0;
-// The diffing and inserting will be deferred to when we do `DomRootEnd` instead. Useful for portal-like rendering.
-// BTW. wouldn't deferring a region just break all finalize_immediately code anyway though? We should just remove this and
-// defer everything. Some code migration will be required.
+/**
+ * The diffing and inserting will be deferred to when we do `DomRootEnd` instead. Useful for portal-like rendering.
+ * BTW. wouldn't deferring a region just break all finalize_immediately code anyway though? We should just remove this and
+ * defer everything. Some code migration will be required.
+ */
 const FINALIZE_DEFERRED = 1; // TOOD: finalize_manually
 
 export type FinalizationType
     = typeof FINALIZE_IMMEDIATELY
     | typeof FINALIZE_DEFERRED;
 
-// NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
-// However, you do need to store your dom appender children somewhere beforehand for stable references. 
-// That is what the im.Cache helps with - but the im.Cache does need control-flow annotations to work. eh, It is what it is
+/**
+ * NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
+ * However, you do need to store your dom appender children somewhere beforehand for stable references. 
+ * That is what the im.Cache helps with - but the im.Cache does need control-flow annotations to work. eh, It is what it is
+ */
 export type DomAppender<E extends AppendableElement = AppendableElement> = {
     label?: string; // purely for debug
 
     root: E;
     keyRef: KeyRef<string> | null; // Could be a key, or a dom element. Used to check pairs are linining up corectly.
 
-    // Set this to true manually when you want to manage the DOM children yourself.
-    // Hopefully that isn't all the time. If it is, then the framework isn't doing you too many favours.
-    // Good use case: You have to manage hundreds of thousands of DOM nodes. 
-    // From my experimentation, it is etiher MUCH faster to do this yourself instead of relying on the framework, or about the same,
-    // depending on how the browser has implemented DOM node rendering.
-    // Also will be needed for 3rd party lib integrations.
+    /**
+     * Set this to true manually when you want to manage the DOM children yourself.
+     * Hopefully that isn't all the time. If it is, then the framework isn't doing you too many favours.
+     * Good use case: You have to manage hundreds of thousands of DOM nodes. 
+     * From my experimentation, it is etiher MUCH faster to do this yourself instead of relying on the framework, or about the same,
+     * depending on how the browser has implemented DOM node rendering.
+     * Also will be needed for 3rd party lib integrations.
+     */
     manualDom: boolean;
     // Text nodes, for example, cannot be appended to.
     isAppendable: boolean; 
 
-    // This is the very root of this dom tree (not the parent or the root of this appender)
+    /* This is the very root of this dom tree (not the parent or the root of this appender) */
     domRoot: DomAppender<ValidElement> | null;
 
     cursor: DomAppender<ValidElement> | null;
@@ -66,12 +76,14 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     nextSibling: DomAppender<ValidElement> | null;
     previousSibling: DomAppender<ValidElement> | null;
 
-    // if FINALIZE_IMMEDIATELY, the final pass can ignore this.
+    /* if FINALIZE_IMMEDIATELY, the final pass can ignore this. */
     finalizeType: FinalizationType; 
 
-    // Dedicated finalization list instead of recursing through every element at the end.
-    // This is because deferring the finalization of an element is very uncommon, so I don't
-    // want to eat the performance penalty of the recursion just to finalize 2 things
+    /**
+     * Dedicated finalization list instead of recursing through every element at the end.
+     * This is because deferring the finalization of an element is very uncommon, so I don't
+     * want to eat the performance penalty of the recursion just to finalize 2 things
+     */
     deferList: DomAppender<ValidElement>[] | undefined;
 };
 
@@ -101,10 +113,12 @@ function newDomAppender<E extends AppendableElement>(
 }
 
 
-// This method attempts to diff the dom while we walk it. 
-// it's useful for the dom node to be inserted into the right position in the tree immediately.
-// (TODO: when moveBefore becomes Generally Available, we can just use that and this won't matter
-// so much)
+/**
+ * This method attempts to diff the dom while we walk it. 
+ * it's useful for the dom node to be inserted into the right position in the tree immediately.
+ * (TODO: when moveBefore becomes Generally Available, we can just use that and this won't matter
+ * so much)
+ */
 function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<any>) {
     if (a.cursor === child) {
         a.cursor = a.cursor.nextSibling;
@@ -157,11 +171,13 @@ function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<any>) 
             a.cursor = a.cursor.nextSibling;
         }
 
-        // Due to how im-core works, we'll mainly try to handle insertion/removal properly
-        // We could write code to make it so that only the smallest # of elements get shuffled around, 
-        // but this means that the choice for which dom element loses it's internal state i.e scroll 
-        // position (this happens when you remove and re-insert a dom node) is dependent on # of children being 
-        // moved and not really deterministic/ understandable in practice.
+        /**
+         * Due to how im-core works, we'll mainly try to handle insertion/removal properly
+         * We could write code to make it so that only the smallest # of elements get shuffled around, 
+         * but this means that the choice for which dom element loses it's internal state i.e scroll 
+         * position (this happens when you remove and re-insert a dom node) is dependent on # of children being 
+         * moved and not really deterministic/ understandable in practice.
+         */
     }
 
     // assert invariants
@@ -191,7 +207,9 @@ function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<any>) 
     } // */
 }
 
-// NOTE: when child.parent.cursor === child, `a.cursor` will be cleared to null.
+/**
+ * NOTE: when child.parent.cursor === child, `a.cursor` will be cleared to null.
+ */
 function removeDomAppender(child: DomAppender<AppendableElement>) {
     if (child.parent !== null) {
         if (child.parent.firstChild === child) { child.parent.firstChild = child.nextSibling; }
@@ -208,9 +226,11 @@ function removeDomAppender(child: DomAppender<AppendableElement>) {
 function finalizeDomAppender(a: DomAppender<ValidElement>) {
     if (a.manualDom === true) return;
 
-    // by the time we get here, the dom nodes we want have already been appended in the right order, and
-    // `a.children` should be pretty much identical to what is in the DOM. 
-    // We just need to remove the children we didn't render this time
+    /**
+     * by the time we get here, the dom nodes we want have already been appended in the right order, and
+     * `a.children` should be pretty much identical to what is in the DOM. 
+     * We just need to remove the children we didn't render this time
+     */
     while (a.cursor !== null) {
         const nextCursor = a.cursor.nextSibling;
         a.cursor.root.remove();
@@ -317,7 +337,9 @@ function imElSvgBeginOffscreen<K extends keyof SVGElementTagNameMap>(
     return childAppender;
 }
 
-// Creates a DOM appender without appending it or making it the current immediate-mode scope's parent item
+/**
+ * Creates a DOM appender without appending it or making it the current immediate-mode scope's parent item
+ */
 function imElCreate<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>,
@@ -383,13 +405,15 @@ function imRootEnd(c: ImCache, root: ValidElement) {
     const appender = getCurrentAppender(c);
     assert(appender.root === root);
 
-    // By finalizing at the very end, we can allow existing dom appenders to be re-pushed onto the stack, and appended to. 
-    // This is useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
-    // For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
-    // but then organising the components becomes a bit annoying.
-    
-    // However - in such cases, it's better to just have imLayerBegin/End and manually finalize in imLayerEnd, and
-    // I actually don't have a good second usecase, so I'm probably going to remove this deferred finalization ability soon.
+    /**
+     * By finalizing at the very end, we can allow existing dom appenders to be re-pushed onto the stack, and appended to. 
+     * This is useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
+     * For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
+     * but then organising the components becomes a bit annoying.
+     *
+     * However - in such cases, it's better to just have imLayerBegin/End and manually finalize in imLayerEnd, and
+     * I actually don't have a good second usecase, so I'm probably going to remove this deferred finalization ability soon.
+     */
 
     // deferred finalization.
     const deferList = appender.domRoot!.deferList;
@@ -443,11 +467,13 @@ function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
  * You should assume that many components have already appened to `existing` to and will append to `existing` later.
  */
 function imAppenderBegin(c: ImCache, existing: DomAppender<any>) {
-    // If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
-    // I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
-    // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
-    // This isn't the default, because it breaks some code that expects the node to have been inserted - 
-    // calls to textInput.focus() for example, won't work till the next frame, for example.
+    /**
+     * If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
+     * I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
+     * This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
+     * This isn't the default, because it breaks some code that expects the node to have been inserted - 
+     * calls to textInput.focus() for example, won't work till the next frame, for example.
+     */
     assert(existing.finalizeType === FINALIZE_DEFERRED);
 
     im.pushParent(c, newDomAppender, existing);
@@ -468,9 +494,11 @@ function imAppenderEnd(c: ImCache, existing: DomAppender<any>) {
     endDomAppender(c, appender);
 }
 
-// Use this if you need the framework to automatically finalize it at the very end of the render pass. 
-// Most of the time this is undesireable, because code that relies on measuring the dimensions of your
-// UI at that point in time won't work consistently - your UI will contain DOM nodes that have yet to be removed.
+/**
+ * Use this if you need the framework to automatically finalize it at the very end of the render pass. 
+ * Most of the time this is undesireable, because code that relies on measuring the dimensions of your
+ * UI at that point in time won't work consistently - your UI will contain DOM nodes that have yet to be removed.
+ */
 function imFinalizeDeferred(c: ImCache) {
     getCurrentAppender(c).finalizeType = FINALIZE_DEFERRED;
 }
@@ -509,7 +537,9 @@ function imStr(c: ImCache, value: Stringifyable): Text {
     return textNodeLeafAppender.root;
 }
 
-// TODO: not scaleable for the same reason State isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
+/**
+ * TODO: not scaleable for the same reason State isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
+ */
 function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
     const appender = getCurrentAppender(c);
 
@@ -603,8 +633,10 @@ function getCurrentElement(c: ImCache) {
     return getCurrentAppender(c).root;
 }
 
-// NOTE: you should only use this if you don't already have some form of global event handling set up,
-// or in cases where you can't use global event handling.
+/**
+ * NOTE: you should only use this if you don't already have some form of global event handling set up,
+ * or in cases where you can't use global event handling.
+ */
 function imOn<K extends keyof HTMLElementEventMap>(
     c: ImCache,
     type: KeyRef<K>,
@@ -621,10 +653,12 @@ function imOn<K extends keyof HTMLElementEventMap>(
             eventType: null,
             eventValue: null,
             eventListener: (e: HTMLElementEventMap[K]) => {
-                // NOTE: Some of you coming from a non-web background may be puzzled as to why
-                // we are re-rendering the entire app for EVERY event. This is because we always want
-                // the ability to call e.preventDefault() while the event is occuring for any event.
-                // Buffering the events means that we will miss the opportunity to prevent the default event.
+                /**
+                 * NOTE: Some of you coming from a non-web background may be puzzled as to why
+                 * we are re-rendering the entire app for EVERY event. This is because we always want
+                 * the ability to call e.preventDefault() while the event is occuring for any event.
+                 * Buffering the events means that we will miss the opportunity to prevent the default event.
+                 */
 
                 val.eventValue = e;
                 im.rerenderCache(c);
@@ -709,10 +743,12 @@ export type SizeState = {
 }
 
 export type KeyboardState = {
-    // We need to use this approach instead of a buffered approach like `keysPressed: string[]`, so that a user
-    // may call `preventDefault` on the html event as needed.
-    // NOTE: another idea is to do `keys.keyDown = null` to prevent other handlers in this framework
-    // from knowing about this event.
+    /**
+     * We need to use this approach instead of a buffered approach like `keysPressed: string[]`, so that a user
+     * may call `preventDefault` on the html event as needed.
+     * NOTE: another idea is to do `keys.keyDown = null` to prevent other handlers in this framework
+     * from knowing about this event.
+     */
     keyDown: KeyboardEvent | null;
     keyUp: KeyboardEvent | null;
 
@@ -1154,14 +1190,16 @@ function removedocAndWindowEventListeners(eventSystem: GlobalEventSystem) {
 ///////////////////////////
 // Various KeyRef entries
 
-// Functions that need string keys, like {@link imdom.ElBegin} or {@link imdom.On}, 
-// can now memoize on an object reference instead of a string. This improves performance.
-// You shouldn't be creating these every frame - just reusing these constants below. 
-// The framework then reads `keyRef.val` to get the actual string.
-// It may not matter a lot for event listeners, but it would matter a lot for
-// DOM elements, of which there can be thousands on any page.
-// But if you put one kind of enum key behind a KeyRef, I as the API user will expect
-// the same for every other thing as well.
+/**
+ * Functions that need string keys, like {@link imdom.ElBegin} or {@link imdom.On}, 
+ * can now memoize on an object reference instead of a string. This improves performance.
+ * You shouldn't be creating these every frame - just reusing these constants below. 
+ * The framework then reads `keyRef.val` to get the actual string.
+ * It may not matter a lot for event listeners, but it would matter a lot for
+ * DOM elements, of which there can be thousands on any page.
+ * But if you put one kind of enum key behind a KeyRef, I as the API user will expect
+ * the same for every other thing as well.
+ */
 export type KeyRef<K> = { val: K };
 
 ///////////////////////////
@@ -1175,7 +1213,9 @@ function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
     arr.length = i2;
 }
 
-// TODO: use keycode if supported
+/**
+ * TODO: use keycode if supported
+ */
 
 type PressedSymbols<T extends string> = {
     pressed: T[];
@@ -1213,9 +1253,11 @@ const KEY_EVENT_REPEATED = 3;
 const KEY_EVENT_BLUR = 4;
 
 
-// https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
-// There are a LOT of them. So I won't bother holding state for every possible key like usual
-// TODO: try using keyCode if available, then fall back on key
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+ * There are a LOT of them. So I won't bother holding state for every possible key like usual
+ * TODO: try using keyCode if available, then fall back on key
+ */
 export type NormalizedKey = string & { __Key: void };
 
 export function getNormalizedKey(key: string): NormalizedKey {
@@ -1264,12 +1306,14 @@ function updatePressedSymbols<T extends string>(
 
     switch (ev) {
         case KEY_EVENT_PRESSED: {
-            // NOTE: the main issue with this input mechanism, is that 
-            // Shift + Click on some browsers will open a context menu that can't be detected. (or at least, I don't know how to detect it).
-            // This can result in KEY_EVENT_RELEASED never being sent. 
-            // The compromise made here is that we only ever have one of any key in these arrays.
-            // The keys _may_ get stuck down, but if the user does the natural thing, press this key again,
-            // it will get released, and all is good.
+            /**
+             * NOTE: the main issue with this input mechanism, is that 
+             * Shift + Click on some browsers will open a context menu that can't be detected. (or at least, I don't know how to detect it).
+             * This can result in KEY_EVENT_RELEASED never being sent. 
+             * The compromise made here is that we only ever have one of any key in these arrays.
+             * The keys _may_ get stuck down, but if the user does the natural thing, press this key again,
+             * it will get released, and all is good.
+             */
 
             if (s.pressed.indexOf(key) === -1) {
                 s.pressed.push(key);
@@ -1440,9 +1484,11 @@ function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): Animati
         }
 
         if (anim.isRendering === true) {
-            // This will make debugging a lot easier. 
-            // Otherwise the animation will play while we're breakpointed. 
-            // Firefox moment. xD
+            /**
+             * This will make debugging a lot easier. 
+             * Otherwise the animation will play while we're breakpointed. 
+             * Firefox moment. xD
+             */
             return;
         }
 
@@ -1457,10 +1503,12 @@ function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): Animati
 
             anim.isRendering = false;
         } catch (e) {
-            // Without doing this, errors become mostly invisible.
-            // I could put a little error page here saying what the error
-            // is, but I think this is just confusing to customers and
-            // not as good as the dev console for developers.
+            /**
+             * Without doing this, errors become mostly invisible.
+             * I could put a little error page here saying what the error
+             * is, but I think this is just confusing to customers and
+             * not as good as the dev console for developers.
+             */
             root.replaceChildren();
 
             anim.isRendering = false;
@@ -1474,9 +1522,11 @@ function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): Animati
 
     im.setRenderFn(c, eventRerenderFn);
 
-    // It's pretty important that no-one else calls rerenderFn anywhere else.
-    // If they did, we would get two concurrent renderings happening at once,
-    // which would continue splitting infinitely.
+    /**
+     * It's pretty important that no-one else calls rerenderFn anywhere else.
+     * If they did, we would get two concurrent renderings happening at once,
+     * which would continue splitting infinitely.
+     */
     function rerenderFn() {
         imMain(c, true);
         requestAnimationFrame(rerenderFn);
@@ -1531,8 +1581,10 @@ export const imdom = {
     setStyleProperty,
     setClass,
     setAttr,
-    // Can be more performant that imdom.Str, since we don't need to do if (prevStr !== str) { updateStr } every frame.
-    // Don't call this on an element that has non-text children! You'll delete them.
+    /**
+     * Can be more performant that imdom.Str, since we don't need to do if (prevStr !== str) { updateStr } every frame.
+     * Don't call this on an element that has non-text children! You'll delete them.
+     */
     setTextUnsafe: setTextContent, 
 
     /** Utility hooks */

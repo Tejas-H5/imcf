@@ -1,25 +1,29 @@
 import { assert } from "./assert";
 
-// Immediate Mode Control-Flow 
+/**
+ * Immediate Mode Control-Flow 
+ */
 
-// Conventions
-//  - An 'immediate mode' method or 'im' method is any method that eventually _writes_ to the `Cache`.
-//    These methods should ideally be prefixed with 'im'.
-//    Conversely, methods that don't touch the Cache, or that will only ever _read_ from the imCache, should NOT be prefixed with 'im'.
-//    This allows developers (and in the future, static analysis tools) to know that this method can't be rendered conditionally, or
-//    out of order, similar to how React hooks work. This is really the only convention I would recommend you actually follow.
-//    - If you want to expose these methods on a namespace, the im can be dropped from the alias, if the namespace itself starts with 'im'
-//
-//  - Methods that begin a scope and have a corresponding method to end that scope should be called `im<Name>Begin` and `im<Name>End`. 
-//    Some day, I plan on making an eslint rule that will make use of this convention to flag missing closing statements.
-//    Though I have significantly reduced the chance of this bug happening with typeIds and such,
-//    missing begin/end statements not being paired corectly can still not be caught, and it can 
-//    cause some strange behaviour or even silent data corruption in some cases.
-//
-//    NOTE: This framework still may have methods or utils that I called them so frequently that I omitted the `Begin` from them. 
-//    As discussed above, I'm in the process of renaming them to conform to `<Begin>/<End>`. There will be carve-outs for
-//    If, imSwitch, imFor and other basic control-flow stuff. I should probably just make this 
-//    static analysis tool - it would speed up the process...
+/**
+ * Conventions
+ *  - An 'immediate mode' method or 'im' method is any method that eventually _writes_ to the `Cache`.
+ *    These methods should ideally be prefixed with 'im'.
+ *    Conversely, methods that don't touch the Cache, or that will only ever _read_ from the imCache, should NOT be prefixed with 'im'.
+ *    This allows developers (and in the future, static analysis tools) to know that this method can't be rendered conditionally, or
+ *    out of order, similar to how React hooks work. This is really the only convention I would recommend you actually follow.
+ *    - If you want to expose these methods on a namespace, the im can be dropped from the alias, if the namespace itself starts with 'im'
+ *
+ *  - Methods that begin a scope and have a corresponding method to end that scope should be called `im<Name>Begin` and `im<Name>End`. 
+ *    Some day, I plan on making an eslint rule that will make use of this convention to flag missing closing statements.
+ *    Though I have significantly reduced the chance of this bug happening with typeIds and such,
+ *    missing begin/end statements not being paired corectly can still not be caught, and it can 
+ *    cause some strange behaviour or even silent data corruption in some cases.
+ *
+ *    NOTE: This framework still may have methods or utils that I called them so frequently that I omitted the `Begin` from them. 
+ *    As discussed above, I'm in the process of renaming them to conform to `<Begin>/<End>`. There will be carve-outs for
+ *    If, imSwitch, imFor and other basic control-flow stuff. I should probably just make this 
+ *    static analysis tool - it would speed up the process...
+ */
 
 
 export type ImCache = {
@@ -177,14 +181,18 @@ function fpsMarkRenderingEnd(fps: FpsCounterState) {
 }
 
 const REMOVE_LEVEL_NONE = 1;
-// This is the default remove level for im-blocks, im-arrays, im-if/else conditionals, and im-switch.
-// The increase in performance far oughtweighs any memory problems.
+/**
+ * This is the default remove level for im-blocks, im-arrays, im-if/else conditionals, and im-switch.
+ * The increase in performance far oughtweighs any memory problems.
+ */
 const REMOVE_LEVEL_DETATCHED = 2;
-// This is the default for im-keyed map entries. This is because we can key components on arbitrary values. 
-// It is common (and intended behaviour) to use object references directly as keys.
-// However, if those objects are constantly created and destroyed, this can pose a problem for REMOVE_LEVEL_DETATCHED. 
-// Using REMOVE_LEVEL_DESTROYED instead allows the map to destroy and remove unused keys, so 
-// that the size of the map isn't constantly increasing.
+/**
+ * This is the default for im-keyed map entries. This is because we can key components on arbitrary values. 
+ * It is common (and intended behaviour) to use object references directly as keys.
+ * However, if those objects are constantly created and destroyed, this can pose a problem for REMOVE_LEVEL_DETATCHED. 
+ * Using REMOVE_LEVEL_DESTROYED instead allows the map to destroy and remove unused keys, so 
+ * that the size of the map isn't constantly increasing.
+ */
 const REMOVE_LEVEL_DESTROYED = 3;
 
 export type RemoveLevel
@@ -296,9 +304,11 @@ function imCacheEnd(c: ImCache) {
 
     c.isRendering = false;
 
-    // Some things may occur while we're rendering the framework that require is to immediately rerender
-    // our components to not have a stale UI. Those events will set this flag to true, so that
-    // We can eventually reach here, and do a full rerender.
+    /**
+     * Some things may occur while we're rendering the framework that require is to immediately rerender
+     * our components to not have a stale UI. Those events will set this flag to true, so that
+     * We can eventually reach here, and do a full rerender.
+     */
     const needsRerender = c.needsRerender;
 
     if (needsRerender === true) {
@@ -446,23 +456,27 @@ function imIsFirstRender(c: ImCache): boolean {
 
     let result = false;
 
-    // NOTE: we can't just do
-    // result = entries.isFirstRender;
-    // entries.isFirstRender = false;
-    //
-    // Lots of other immediate-mode methods will call imIsFirstRender to initialize themselves,
-    // and they shouldn't need to worry about whether imIsFirstRender has already been queried. 
-    //
-    // We also can't just do entries.isFirstRender = false; in the call to imCacheEntriesEnd -
-    // If the component throws before calling this and then recovers, all the calls to imIsFirstRender
-    // remain true - this can cause subtle bugs like setting the same style twice, to catastrophic bugs 
-    // like double-subscribing event handlers. 
-    // (For the longest time, that was the best I could do and this method was called imIsFirstishRender,
-    // I've since realised that I could do better at around version 1.102 (internal version pre npm)).
+    /**
+     * NOTE: we can't just do
+     * result = entries.isFirstRender;
+     * entries.isFirstRender = false;
+     *
+     * Lots of other immediate-mode methods will call imIsFirstRender to initialize themselves,
+     * and they shouldn't need to worry about whether imIsFirstRender has already been queried. 
+     *
+     * We also can't just do entries.isFirstRender = false; in the call to imCacheEntriesEnd -
+     * If the component throws before calling this and then recovers, all the calls to imIsFirstRender
+     * remain true - this can cause subtle bugs like setting the same style twice, to catastrophic bugs 
+     * like double-subscribing event handlers. 
+     * (For the longest time, that was the best I could do and this method was called imIsFirstishRender,
+     * I've since realised that I could do better at around version 1.102 (internal version pre npm)).
+     */
 
-    // For performance reasons, we're just incrementing a number instead of inserting new entries.
-    // If your immediate-mode code was written correctly, it will be identical to just doing
-    // if (im.Memo(c, true)) {...}
+    /**
+     * For performance reasons, we're just incrementing a number instead of inserting new entries.
+     * If your immediate-mode code was written correctly, it will be identical to just doing
+     * if (im.Memo(c, true)) {...}
+     */
 
     e.firstRenderQueryCount += 1;
     if (e.prevFirstRenderQueryCount < e.firstRenderQueryCount) {
@@ -560,18 +574,22 @@ If it's the latter, try using im.For/im.ForEnd, im.If/im.IfEnd, im.Switch/im.Swi
 function onMaybeStartedRenderingEntries(c: ImCache, entries: ImCacheEntries) {
     if (entries.startedRendering === false) {
         entries.startedRendering = true;
-        // Rendering 0 items is the signal to remove an immediate-mode block from the conditional pathway.
-        // This means we can't know that an immediate mode block has re-entered the conditional pathway untill 
-        // it has started rendering the first item, which is what this if-block is handling
+        /**
+         * Rendering 0 items is the signal to remove an immediate-mode block from the conditional pathway.
+         * This means we can't know that an immediate mode block has re-entered the conditional pathway untill 
+         * it has started rendering the first item, which is what this if-block is handling
+         */
 
         if (entries.isInConditionalPathway === false) {
             entries.isInConditionalPathway = true;
             entries.startedConditionallyRendering = true;
             entries.removeLevel = REMOVE_LEVEL_NONE;
         } else if (entries.startedConditionallyRendering !== false) {
-            // NOTE: if an error occured in the previous render, then
-            // subsequent things that depended on `startedConditionallyRendering` being true won't run.
-            // I think this is better than re-running all the things that ran successfully over and over again.
+            /**
+             * NOTE: if an error occured in the previous render, then
+             * subsequent things that depended on `startedConditionallyRendering` being true won't run.
+             * I think this is better than re-running all the things that ran successfully over and over again.
+             */
             entries.startedConditionallyRendering = false;
         }
     }
@@ -732,12 +750,14 @@ function imKeyedEnd(c: ImCache) {
     imImmediateModeBlockEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
-// You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
-// By the underlying API itself that you are wrapping, like event listeners or resize observers etc.
-// Most of the time, it's better to decouple the lifecycle of the item from the specific position in the UI heriarchy.
-// For example - you don't need hundreds of components to independently subscribe to global mouse event handlers - this
-// can be done once at the global level by one system. 
-// Something similar can be said about making network requests, local storage requests, web sockets, and so on.
+/**
+ * You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
+ * By the underlying API itself that you are wrapping, like event listeners or resize observers etc.
+ * Most of the time, it's better to decouple the lifecycle of the item from the specific position in the UI heriarchy.
+ * For example - you don't need hundreds of components to independently subscribe to global mouse event handlers - this
+ * can be done once at the global level by one system. 
+ * Something similar can be said about making network requests, local storage requests, web sockets, and so on.
+ */
 function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
     const e = getCurrentCacheEntries(c);
     let destructors = e.destructors;
@@ -859,7 +879,9 @@ function newCacheEntries(internalType: number): ImCacheEntries {
     }
 }
 
-// This is the typeId for a list of cache entries.
+/**
+ * This is the typeId for a list of cache entries.
+ */
 function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK): ImCacheEntries {
     let entries; entries = imGet(c, imImmediateModeBlockBegin);
     if (entries === undefined) {
@@ -954,7 +976,9 @@ function imIfEnd(c: ImCache) {
     __BlockArrayEnd(c);
 }
 
-// All roads lead to rome (TM) design pattern. not sure if good idea or shit idea
+/**
+ * All roads lead to rome (TM) design pattern. not sure if good idea or shit idea
+ */
 const EndIf = imIfEnd;
 const imElse = imIfElse;
 const EndSwitch = imSwitchEnd;
@@ -989,10 +1013,12 @@ const EndFor = imForEnd;
  */
 function imSwitch(c: ImCache, key: ValidKey, cached = im.NOT_CACHED) {
     imImmediateModeBlockBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
-    // I expect the keys to a switch statement to be constants that are known at 'compile time', 
-    // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
-    // NOTE: However, switches can have massive components behind them.
-    // This decision may be reverted in the future if we find it was a mistake.
+    /**
+     * I expect the keys to a switch statement to be constants that are known at 'compile time', 
+     * so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
+     * NOTE: However, switches can have massive components behind them.
+     * This decision may be reverted in the future if we find it was a mistake.
+     */
     __BlockKeyedBegin(c, key, cached ? REMOVE_LEVEL_DETATCHED : REMOVE_LEVEL_DESTROYED);
 }
 
@@ -1049,7 +1075,9 @@ function __BlockArrayEnd(c: ImCache) {
     imImmediateModeBlockEnd(c, INTERNAL_TYPE_ARRAY_BLOCK);
 }
 
-// This is the initial value, so that anything, even `undefined`, can trigger Memo
+/**
+ * This is the initial value, so that anything, even `undefined`, can trigger Memo
+ */
 const IM_MEMO_FIRST_EVER = {};
 
 const MEMO_NOT_CHANGED = 0;
@@ -1242,8 +1270,10 @@ function getDeltaTimeSeconds(c: ImCache): number {
     return Math.min(0.05, c.animationDeltaTimeSeconds);
 }
 
-// Events can trigger rerenders in the same frame.
-// This is the only way you can detect that rn
+/**
+ * Events can trigger rerenders in the same frame.
+ * This is the only way you can detect that rn
+ */
 function getRenderCount(c: ImCache) {
     return c.renderCount;
 }
@@ -1280,10 +1310,12 @@ export const im = {
     GetInline: imGetInline,  
     isSetRequired,  // Useful for when you want to store `undefined` as a valid value
     State: imState,
-    // Use this to add a destructor. Destructors should not be relied upon to execute business logic on entry-list exit, because
-    // they may or may not run depending on the 'remove level' you've set, which is purely based on
-    // the performance/memory tradeoff you want.
-    // They should only be used to free memory/resources, like event listeners, various observers, etc.
+    /**
+     * Use this to add a destructor. Destructors should not be relied upon to execute business logic on entry-list exit, because
+     * they may or may not run depending on the 'remove level' you've set, which is purely based on
+     * the performance/memory tradeoff you want.
+     * They should only be used to free memory/resources, like event listeners, various observers, etc.
+     */
     onImmediateModeBlockDestroyed, 
 
     /** Conditional rendering, list rendering */
@@ -1332,11 +1364,13 @@ export const im = {
     getEntriesRemoveLevel,    // When this entry list leaves the conditional pathway, to what extent should we remove it?
     REMOVE_LEVEL_NONE, REMOVE_LEVEL_DETATCHED, REMOVE_LEVEL_DESTROYED,
     getEntriesIsInConditionalPathway,   // Is this entry list currently in the conditional pathway?
-    // Use this to rerender the cache in response to events.
-    // If we're currently rendering, this schedules another render immediately after
-    //      in the same event tick.
-    // Else, it will request a new animation frame and render in that.
-    // NOTE: You should never need to use this directly in application code. 
+    /**
+     * Use this to rerender the cache in response to events.
+     * If we're currently rendering, this schedules another render immediately after
+     *      in the same event tick.
+     * Else, it will request a new animation frame and render in that.
+     * NOTE: You should never need to use this directly in application code. 
+     */
     rerenderCache,               
     recursivelyEnumerateEntries, // Recursively enumerate your entries
 
