@@ -80,6 +80,9 @@ function newCache(): ImCache {
 }
 
 export type ImCacheEntries = {
+    // An array of pairs [[typeId<T>, T]|...]
+    entries: unknown[];
+
     startedRendering: boolean;
     isInConditionalPathway: boolean;
     startedConditionallyRendering: boolean;
@@ -97,9 +100,6 @@ export type ImCacheEntries = {
         map: Map<ValidKey, ListMapBlock>;
         removeLevel: RemoveLevel;
     } | undefined;
-
-    // An array of pairs [[typeId<T>, T]|...]
-    entries: unknown[];
 }
 
 
@@ -757,9 +757,9 @@ function recursivelyEnumerateEntries(e: ImCacheEntries, fn: (entries: ImCacheEnt
         }
 
 
-        let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
+        let map = e.keyedMap;
         if (map !== undefined) {
-            for (const block of map.values()) {
+            for (const block of map.map.values()) {
                 recursivelyEnumerateEntries(block.entries, fn);
             }
         }
@@ -777,9 +777,9 @@ function imForEachCacheEntryItem(e: ImCacheEntries, fn: (t: TypeId<unknown>, val
         fn(t, v);
     }
 
-    let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
+    let map = e.keyedMap;
     if (map !== undefined) {
-        for (const block of map.values()) {
+        for (const block of map.map.values()) {
             imForEachCacheEntryItem(block.entries, fn);
         }
     }
@@ -809,9 +809,9 @@ function cacheEntriesOnDestroy(c: ImCache, e: ImCacheEntries) {
             }
         }
 
-        let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
+        let map = e.keyedMap;
         if (map !== undefined) {
-            for (const block of map.values()) {
+            for (const block of map.map.values()) {
                 cacheEntriesOnDestroy(c, block.entries);
             }
         }
