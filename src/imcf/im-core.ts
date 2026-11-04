@@ -23,9 +23,9 @@ import { assert } from "./assert";
 
 
 export type ImCache = {
-    // its pairs of [typeId, value] but stored linearly.
+    // its pairs of [[typeId, value],...] but stored linearly.
     // this stack is orthogonal to the other imCacheEntries stack
-    parentStack: any[];
+    parentStack: unknown[];
     rootEntries: ImCacheEntries;
     // We only need a new entry list whenever there's a dynamic bit in 
     // the parent stack i.e conditional rendering or list rendering.
@@ -79,25 +79,29 @@ function newCache(): ImCache {
     };
 }
 
+export type ImCacheEntries = {
+    startedRendering: boolean;
+    isInConditionalPathway: boolean;
+    startedConditionallyRendering: boolean;
+    internalType: number;
+    removeLevel: RemoveLevel;
 
-const ENTRIES_STARTED_RENDERING               = 0;
-const ENTRIES_REMOVE_LEVEL                    = 1;
-const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 2;
-const ENTRIES_IS_DERIVED                      = 3;
-const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
-const ENTRIES_DESTRUCTORS                     = 5;
-const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
-const ENTRIES_KEYED_MAP                       = 7;
-// NOTE: ENTRIES_PARENT_TYPE and ENTRIES_PARENT_VALUE have now been completely removed.
-// Tree structures should be modelled on the adapter side using a stack.
-// This way, a static tree structure that takes a fixed number of elements can still
-// just be backed by a singuler contiguous array in memory!
-const ENTRIES_INTERNAL_TYPE                   = 8;
-const ENTRIES_LAST_IDX                        = 9;
-const ENTRIES_IDX                             = 10;
-const ENTRIES_FIRST_RENDER_QUERY_COUNT        = 11;
-const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 12;
-const ENTRIES_ITEMS_START                     = 13; // Not in the struct implementation, but we'll need it for the array implementation
+    lastIdx: number;
+    idx: number;
+    firstRenderQueryCount: number;
+    prevFirstRenderQueryCount: number;
+
+    destructors: (() => void)[] | undefined;
+
+    keyedMap: {
+        map: Map<ValidKey, ListMapBlock>;
+        removeLevel: RemoveLevel;
+    } | undefined;
+
+    // An array of pairs [[typeId<T>, T]|...]
+    entries: unknown[];
+}
+
 
 function getItemsIterated(c: ImCache): number {
     return c.itemsIteratedLastFrame;
@@ -121,11 +125,11 @@ function getRootEntries(c: ImCache): ImCacheEntries {
 }
 
 function getEntriesRemoveLevel(entries: ImCacheEntries) {
-    return entries[ENTRIES_REMOVE_LEVEL];
+    return entries.removeLevel;
 }
 
 function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
-    return entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
+    return entries.isInConditionalPathway;
 }
 
 function getStackLength(c: ImCache) {
@@ -133,7 +137,6 @@ function getStackLength(c: ImCache) {
 }
 
 
-export type ImCacheEntries = any[] & { __CacheEntries: void };
 
 export type FpsCounterState = {
     renderCount: number;
@@ -180,7 +183,7 @@ const REMOVE_LEVEL_DETATCHED = 2;
 // that the size of the map isn't constantly increasing.
 const REMOVE_LEVEL_DESTROYED = 3;
 
-export type RemovedLevel
+export type RemoveLevel
     = typeof REMOVE_LEVEL_NONE
     | typeof REMOVE_LEVEL_DETATCHED   
     | typeof REMOVE_LEVEL_DESTROYED;
@@ -328,19 +331,19 @@ function imCacheEntriesBegin<T>(
     entries: ImCacheEntries,
     internalType: number,
 ) {
-    assert(entries[ENTRIES_INTERNAL_TYPE] === internalType, CONDITIONAL_RENDERING_ERROR_MESSAGE);
+    assert(entries.internalType === internalType, CONDITIONAL_RENDERING_ERROR_MESSAGE);
 
     c.stack.push(entries);
 
-    entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
-    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
-    entries[ENTRIES_STARTED_RENDERING] = false;
+    entries.idx = -2;
+    entries.firstRenderQueryCount = 0;
+    entries.startedRendering = false;
 
-    const map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+    const map = entries.keyedMap;
     if (map !== undefined) {
         // TODO: maintain a list of things we rendered last frame.
         // This map may become massive depending on how caching has been configured.
-        for (const v of map.values()) {
+        for (const v of map.map.values()) {
             v.rendered = false;
         }
     }
@@ -352,13 +355,13 @@ function imCacheEntriesEnd(c: ImCache) {
     }
 
     const entries = c.stack[c.stack.length - 1];
-    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+    let map = entries.keyedMap;
     if (map !== undefined) {
-        c.totalMapEntries += map.size;
+        c.totalMapEntries += map.map.size;
 
-        const removeLevel = entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL];
+        const removeLevel = map.removeLevel;
         if (removeLevel === REMOVE_LEVEL_DETATCHED) {
-            for (const v of map.values()) {
+            for (const v of map.map.values()) {
                 if (v.rendered === false) {
                     cacheEntriesOnRemove(v.entries);
                 }
@@ -366,10 +369,10 @@ function imCacheEntriesEnd(c: ImCache) {
         } else if (removeLevel === REMOVE_LEVEL_DESTROYED) {
             // This is now the default for keyed elements. You will avoid memory leaks if they
             // get destroyed instead of detatched. 
-            for (const [k, v] of map) {
+            for (const [k, v] of map.map) {
                 if (v.rendered === false) {
                     cacheEntriesOnDestroy(c, v.entries);
-                    map.delete(k);
+                    map.map.delete(k);
                 }
             }
         } else {
@@ -377,13 +380,13 @@ function imCacheEntriesEnd(c: ImCache) {
         }
     }
 
-    let idx = entries[ENTRIES_IDX];
-    const lastIdx = entries[ENTRIES_LAST_IDX];
+    let idx = entries.idx;
+    const lastIdx = entries.lastIdx;
     if (idx !== lastIdx) {
-        if (lastIdx === ENTRIES_ITEMS_START - 2) {
+        if (lastIdx === -2) {
             // This was the first render. All g
-            entries[ENTRIES_LAST_IDX] = idx;
-        } else if (idx !== ENTRIES_ITEMS_START - 2) {
+            entries.lastIdx = idx;
+        } else if (idx !== -2) {
             // This was not the first render...
             throw new Error("You should be rendering the same number of things in every render cycle");
         }
@@ -428,7 +431,7 @@ function getNumParents(c: ImCache): number {
 }
 
 function imIsFirstRender(c: ImCache): boolean {
-    const entries = getCurrentCacheEntries(c);
+    const e = getCurrentCacheEntries(c);
 
     let result = false;
 
@@ -450,13 +453,13 @@ function imIsFirstRender(c: ImCache): boolean {
     // If your immediate-mode code was written correctly, it will be identical to just doing
     // if (im.Memo(c, true)) {...}
 
-    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] += 1;
-    if (entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] < entries[ENTRIES_FIRST_RENDER_QUERY_COUNT]) {
-        entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = entries[ENTRIES_FIRST_RENDER_QUERY_COUNT];
+    e.firstRenderQueryCount += 1;
+    if (e.prevFirstRenderQueryCount < e.firstRenderQueryCount) {
+        e.prevFirstRenderQueryCount = e.firstRenderQueryCount;
         result = true;
     }
 
-    onMaybeStartedRenderingEntries(c, entries);
+    onMaybeStartedRenderingEntries(c, e);
 
     return result;
 }
@@ -498,23 +501,23 @@ function imGet<T>(
     typeId: TypeId<T>,
     initialValue: T | undefined = undefined
 ): T | undefined {
-    const entries = getCurrentCacheEntries(c);
+    const e = getCurrentCacheEntries(c);
     c.itemsIterated++;
 
     if (c.currentlyWaitingForSet !== false) {
         throw new Error("The previous call to imGet was not paired with a call to imSet");
     }
 
-    onMaybeStartedRenderingEntries(c, entries);
+    onMaybeStartedRenderingEntries(c, e);
 
     // [type, value][type,value],[typ....
     // ^----------->^
-    entries[ENTRIES_IDX] += 2;
+    e.idx += 2;
 
-    const idx = entries[ENTRIES_IDX];
-    if (idx < entries.length) {
-        if (entries[idx] !== typeId) {
-            const expectedName = entries[idx].name;
+    const idx = e.idx;
+    if (idx < e.entries.length) {
+        if (e.entries[idx] !== typeId) {
+            const expectedName = (e.entries[idx] as TypeId<any>).name;
             let gotName = typeId.name;
             let errorMessage;
             if (expectedName === gotName) {
@@ -522,18 +525,18 @@ function imGet<T>(
             } else {
                 errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got ${gotName} . ${CONDITIONAL_RENDERING_ERROR_MESSAGE}`;
             }
-            console.error(errorMessage, entries[idx], typeId);
+            console.error(errorMessage, e.entries[idx], typeId);
             throw new Error(errorMessage);
         }
-    } else if (idx === entries.length) {
-        entries.push(typeId);
-        entries.push(initialValue);
+    } else if (idx === e.entries.length) {
+        e.entries.push(typeId);
+        e.entries.push(initialValue);
         c.currentlyWaitingForSet = true;
     } else {
         throw new Error("Shouldn't reach here");
     }
 
-    return entries[idx + 1];
+    return e.entries[idx + 1] as T | undefined;
 }
 
 const CONDITIONAL_RENDERING_ERROR_MESSAGE = `Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state.
@@ -544,21 +547,21 @@ If it's the latter, try using im.For/im.ForEnd, im.If/im.IfEnd, im.Switch/im.Swi
  * entries list shouldn't be removed that render.
  */
 function onMaybeStartedRenderingEntries(c: ImCache, entries: ImCacheEntries) {
-    if (entries[ENTRIES_STARTED_RENDERING] === false) {
-        entries[ENTRIES_STARTED_RENDERING] = true;
+    if (entries.startedRendering === false) {
+        entries.startedRendering = true;
         // Rendering 0 items is the signal to remove an immediate-mode block from the conditional pathway.
         // This means we can't know that an immediate mode block has re-entered the conditional pathway untill 
         // it has started rendering the first item, which is what this if-block is handling
 
-        if (entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] === false) {
-            entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = true;
-            entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = true;
-            entries[ENTRIES_REMOVE_LEVEL] = REMOVE_LEVEL_NONE;
-        } else if (entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] !== false) {
+        if (entries.isInConditionalPathway === false) {
+            entries.isInConditionalPathway = true;
+            entries.startedConditionallyRendering = true;
+            entries.removeLevel = REMOVE_LEVEL_NONE;
+        } else if (entries.startedConditionallyRendering !== false) {
             // NOTE: if an error occured in the previous render, then
             // subsequent things that depended on `startedConditionallyRendering` being true won't run.
             // I think this is better than re-running all the things that ran successfully over and over again.
-            entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
+            entries.startedConditionallyRendering = false;
         }
     }
 }
@@ -628,20 +631,20 @@ function imState<T>(c: ImCache, fn: () => T): T {
 }
 
 function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
-    const entries = getCurrentCacheEntries(c);
-    const type = entries[ENTRIES_ITEMS_START + idx]
+    const e = getCurrentCacheEntries(c);
+    const type = e.entries[idx]
     if (type !== typeId) {
         throw new Error("Didn't find <typeId::" + typeId.name + "> at " + idx);
     }
 
-    const val = entries[ENTRIES_ITEMS_START + idx + 1];
+    const val = e.entries[idx + 1];
     return val as T;
 }
 
 function imSet<T>(c: ImCache, val: T): T {
-    const entries = getCurrentCacheEntries(c);
-    const idx = entries[ENTRIES_IDX];
-    entries[idx + 1] = val;
+    const e = getCurrentCacheEntries(c);
+    const idx = e.idx;
+    e.entries[idx + 1] = val;
     c.currentlyWaitingForSet = false;
     return val;
 }
@@ -651,22 +654,23 @@ export type ListMapBlock = { rendered: boolean; entries: ImCacheEntries; };
 /**
  * Creates an entry in the _Parent's_ keyed elements map.
  */
-function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel) {
-    const entries = getCurrentCacheEntries(c);
-    entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = removeLevel;
+function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemoveLevel) {
+    const e = getCurrentCacheEntries(c);
 
-    onMaybeStartedRenderingEntries(c, entries);
+    onMaybeStartedRenderingEntries(c, e);
 
-    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
-    if (map === undefined) {
-        map = new Map<ValidKey, ListMapBlock>();
-        entries[ENTRIES_KEYED_MAP] = map;
+    if (e.keyedMap === undefined) {
+        e.keyedMap = {
+            map: new Map(),
+            removeLevel: REMOVE_LEVEL_NONE,
+        }
     }
+    e.keyedMap.removeLevel = removeLevel;
 
-    let block = map.get(key);
+    let block = e.keyedMap.map.get(key);
     if (block === undefined) {
         block = { rendered: false, entries: newCacheEntries(INTERNAL_TYPE_KEYED_BLOCK) };
-        map.set(key, block);
+        e.keyedMap.map.set(key, block);
     }
 
     /**
@@ -724,11 +728,11 @@ function imKeyedEnd(c: ImCache) {
 // can be done once at the global level by one system. 
 // Something similar can be said about making network requests, local storage requests, web sockets, and so on.
 function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
-    const entries = getCurrentCacheEntries(c);
-    let destructors = entries[ENTRIES_DESTRUCTORS];
+    const e = getCurrentCacheEntries(c);
+    let destructors = e.destructors;
     if (destructors === undefined) {
         destructors = [];
-        entries[ENTRIES_DESTRUCTORS] = destructors;
+        e.destructors = destructors;
     }
 
     destructors.push(destructor);
@@ -736,24 +740,24 @@ function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
 }
 
 function cacheEntriesOnRemove(entries: ImCacheEntries) {
-    if (entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] === true) {
+    if (entries.isInConditionalPathway === true) {
         recursivelyEnumerateEntries(entries, cacheEntriesRemoveEnumerator);
     }
 }
 
-function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
-    const shouldEnumerate = fn(entries);
+function recursivelyEnumerateEntries(e: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
+    const shouldEnumerate = fn(e);
     if (shouldEnumerate) {
-        for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
-            const t = entries[i];
-            const v = entries[i + 1];
+        for (let i = 0; i < e.entries.length; i += 2) {
+            const t = e.entries[i];
+            const v = e.entries[i + 1];
             if (t === imImmediateModeBlockBegin) {
-                recursivelyEnumerateEntries(v, fn);
+                recursivelyEnumerateEntries(v as ImCacheEntries, fn);
             }
         }
 
 
-        let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+        let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
         if (map !== undefined) {
             for (const block of map.values()) {
                 recursivelyEnumerateEntries(block.entries, fn);
@@ -766,14 +770,14 @@ function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCa
  * Iterates every item in an entries list. You only need this if you're working on 
  * dev-tools for this framework. Doesn't iterate into child entries.
  */
-function imForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
-    for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
-        const t = entries[i];
-        const v = entries[i + 1];
+function imForEachCacheEntryItem(e: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
+    for (let i = 0; i < e.entries.length; i += 2) {
+        const t = e.entries[i] as TypeId<unknown>;
+        const v = e.entries[i + 1];
         fn(t, v);
     }
 
-    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+    let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
     if (map !== undefined) {
         for (const block of map.values()) {
             imForEachCacheEntryItem(block.entries, fn);
@@ -783,36 +787,36 @@ function imForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown
 
 function cacheEntriesRemoveEnumerator(entries: ImCacheEntries): boolean {
     // don't re-traverse these items.
-    if (entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] === true) {
-        entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
+    if (entries.isInConditionalPathway === true) {
+        entries.isInConditionalPathway = false;
         return true;
     }
 
     return false;
 }
 
-function cacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
+function cacheEntriesOnDestroy(c: ImCache, e: ImCacheEntries) {
     // don't re-traverse these items.
-    if (entries[ENTRIES_REMOVE_LEVEL] < REMOVE_LEVEL_DESTROYED) {
-        entries[ENTRIES_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
-        entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
+    if (e.removeLevel < REMOVE_LEVEL_DESTROYED) {
+        e.removeLevel = REMOVE_LEVEL_DESTROYED;
+        e.isInConditionalPathway = false;
 
-        for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
-            const t = entries[i];
-            const v = entries[i + 1];
+        for (let i = 0; i < e.entries.length; i += 2) {
+            const t = e.entries[i];
+            const v = e.entries[i + 1];
             if (t === imImmediateModeBlockBegin) {
-                cacheEntriesOnDestroy(c, v);
+                cacheEntriesOnDestroy(c, v as ImCacheEntries);
             }
         }
 
-        let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+        let map = e.keyedMap as (Map<ValidKey, ListMapBlock> | undefined);
         if (map !== undefined) {
             for (const block of map.values()) {
                 cacheEntriesOnDestroy(c, block.entries);
             }
         }
 
-        const destructors = entries[ENTRIES_DESTRUCTORS];
+        const destructors = e.destructors;
         if (destructors !== undefined) {
             for (const d of destructors) {
                 try {
@@ -822,28 +826,26 @@ function cacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
                     console.error("A destructor threw an error: ", e);
                 }
             }
-            entries[ENTRIES_DESTRUCTORS] = undefined;
+            e.destructors = undefined;
         }
     }
 }
 
 function newCacheEntries(internalType: number): ImCacheEntries {
-    const entries: ImCacheEntries = new Array(ENTRIES_ITEMS_START)
-        .fill(undefined) as ImCacheEntries;
-
-    entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
-    entries[ENTRIES_LAST_IDX] = ENTRIES_ITEMS_START - 2;
-    entries[ENTRIES_REMOVE_LEVEL] = REMOVE_LEVEL_DETATCHED;
-    entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
-    entries[ENTRIES_IS_DERIVED] = false;
-    entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
-    entries[ENTRIES_STARTED_RENDERING] = false;
-    entries[ENTRIES_INTERNAL_TYPE] = internalType;
-    entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
-    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
-    entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = 0;
-
-    return entries;
+    return {
+        idx: -2,
+        lastIdx: -2,
+        removeLevel: REMOVE_LEVEL_DETATCHED,
+        isInConditionalPathway: false,
+        startedConditionallyRendering: false,
+        startedRendering: false,
+        internalType: internalType,
+        firstRenderQueryCount: 0,
+        prevFirstRenderQueryCount: 0,
+        destructors: undefined,
+        keyedMap: undefined,
+        entries: [],
+    }
 }
 
 // This is the typeId for a list of cache entries.
@@ -859,11 +861,11 @@ function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_T
 }
 
 function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
-    const entries = getCurrentCacheEntries(c);
+    const e = getCurrentCacheEntries(c);
 
-    if (entries[ENTRIES_INTERNAL_TYPE] !== internalType) {
+    if (e.internalType !== internalType) {
         const message = `Opening and closing blocks may not be lining up right. You may have missed or inserted some blocks by accident. `
-            + "expected " + internalTypeToString(entries[ENTRIES_INTERNAL_TYPE]) + ", got " + internalTypeToString(internalType);
+            + "expected " + internalTypeToString(e.internalType) + ", got " + internalTypeToString(internalType);
         throw new Error(message)
     }
 
@@ -997,10 +999,10 @@ function __BlockConditionalBegin(c: ImCache) {
 }
 
 function __BlockConditionalEnd(c: ImCache) {
-    const entries = getCurrentCacheEntries(c);
-    if (entries[ENTRIES_STARTED_RENDERING] === false) {
+    const e = getCurrentCacheEntries(c);
+    if (e.startedRendering === false) {
         // Not rendering to the cache entries is the signal to remove everything rendered under it last. 
-        cacheEntriesOnRemove(entries);
+        cacheEntriesOnRemove(e);
     }
 
     imImmediateModeBlockEnd(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
@@ -1015,23 +1017,23 @@ function imForEnd(c: ImCache) {
 }
 
 function __BlockArrayEnd(c: ImCache) {
-    const entries = getCurrentCacheEntries(c)
+    const e = getCurrentCacheEntries(c)
 
-    const idx = entries[ENTRIES_IDX];
-    const lastIdx = entries[ENTRIES_LAST_IDX];
+    const idx = e.idx;
+    const lastIdx = e.lastIdx;
     if (idx < lastIdx) {
         // These entries have left the conditional rendering pathway
         for (let i = idx + 2; i <= lastIdx; i += 2) {
-            const t = entries[i];
-            const v = entries[i + 1];
+            const t = e.entries[i];
+            const v = e.entries[i + 1];
             if (t === imImmediateModeBlockBegin) {
-                cacheEntriesOnRemove(v);
+                cacheEntriesOnRemove(v as ImCacheEntries);
             }
         }
     }
 
     // we allow growing or shrinking this kind of block in particular
-    entries[ENTRIES_LAST_IDX] = idx;
+    e.lastIdx = idx;
 
     imImmediateModeBlockEnd(c, INTERNAL_TYPE_ARRAY_BLOCK);
 }
@@ -1114,7 +1116,7 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
 
     let result: MemoResult = MEMO_NOT_CHANGED;
 
-    const entries = getCurrentCacheEntries(c);
+    const e = getCurrentCacheEntries(c);
 
     let lastVal = imGet(c, inlineTypeId(imMemo), IM_MEMO_FIRST_EVER);
     if (lastVal !== val) {
@@ -1124,7 +1126,7 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
         } else {
             result = MEMO_CHANGED;
         }
-    } else if (entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] === true) {
+    } else if (e.startedConditionallyRendering === true) {
         result = MEMO_FIRST_RENDER;
     }
 
@@ -1216,8 +1218,8 @@ function imTryEnd(c: ImCache, tryState: TryState) {
         assert(getCurrentCacheEntries(c) === tryState.entries);
         imCacheEntriesEnd(c);
     } else {
-        const entries = getCurrentCacheEntries(c);
-        assert(entries === tryState.entries);
+        const e = getCurrentCacheEntries(c);
+        assert(e === tryState.entries);
         imImmediateModeBlockEnd(c, INTERNAL_TYPE_TRY_BLOCK);
     }
 }
@@ -1257,9 +1259,6 @@ export const im = {
 
     /** Need to call these two for the immediate-mode cache to work */
     CacheBegin: imCacheBegin, CacheEnd: imCacheEnd,
-
-    /** Internal methods and variables */
-    ENTRIES_ITEMS_START, // Offset into an ImCacheEntries where the actual items start
 
     /** State management - all different flavours of im.Get/im.Set */
     Get: imGet, Set: imSet,

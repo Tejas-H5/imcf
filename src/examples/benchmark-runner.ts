@@ -16,7 +16,7 @@ export function imBenchmarkRunner(
         result: newBenchmarkResult(),
     });
 
-    if (imButtonIsClicked(c, state.reportView ? "Report view" : "UI view")) {
+    if (imButtonIsClicked(c, state.reportView ? "UI view ->" : "Report view ->")) {
         state.reportView = !state.reportView;
     }
 
