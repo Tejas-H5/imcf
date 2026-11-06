@@ -169,7 +169,7 @@ export function imVisualTestHarness(
     let scrolledToTop = false;
 
     const root = imui.Begin(c, COL); imui.Flex(c); {
-        const rootClientRect = root.getBoundingClientRect();
+        const { size } = imdom.TrackSize(c);
 
         if (im.If(c) && !s.currentTest) {
             if (imSplashScreen(c, s)) {
@@ -194,7 +194,7 @@ export function imVisualTestHarness(
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
                     // We need to be able to highlight the things without triggering the sidebars.
-                    const paddingPx = rootClientRect.width * SIDEBAR_OPEN_TRIGGER_THRESHOLD + 5;
+                    const paddingPx = size.width * SIDEBAR_OPEN_TRIGGER_THRESHOLD + 5;
                     imui.PaddingRL(c, paddingPx, PX, paddingPx, PX);
 
                     imui.Begin(c, BLOCK); { 

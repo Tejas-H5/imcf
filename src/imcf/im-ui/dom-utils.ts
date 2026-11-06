@@ -190,20 +190,3 @@ export function getElementExtentNormalized(scrollParent: HTMLElement, scrollTo: 
 
     return result;
 }
-
-
-export function imOnBlur(c: ImCache, input: HTMLTextAreaElement | HTMLInputElement) {
-    const blur = imdom.On(c, ev.BLUR);
-    if (!blur) {
-        return undefined;
-    }
-
-    // Specifically on Chrome and not Firefox, mounting an input will trigger the blur event. 
-    // We only care about defocusing.
-    const isActuallyFocused = document.activeElement !== input;
-    if (isActuallyFocused) {
-        return undefined;
-    }
-
-    return blur;
-}

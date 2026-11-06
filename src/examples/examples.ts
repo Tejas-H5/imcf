@@ -10,7 +10,6 @@ import tutorial1 from "./pages/tutorial-1-todo-list.md";
 import tutorial2 from "./pages/tutorial-2.md";
 import tutorial3 from "./pages/tutorial-3.md";
 import stillNotSure from "./pages/still-not-sure.md";
-import diffTest from "./pages/diff-test.md";
 import benchmarks from "./pages/benchmarks.md";
 
 import { assert } from "assert";
@@ -65,12 +64,6 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(stillNotSure, modules),
     newVisualTestFromBlogLang(theEnd, modules),
 ];
-
-if (!import.meta.env.IS_PROD) {
-    tests.push(
-        newVisualTestFromBlogLang(diffTest, modules),
-    )
-}
 
 export function imMain(c: ImCache) {
     imui.LayoutBegin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {

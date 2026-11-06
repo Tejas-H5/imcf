@@ -1,5 +1,5 @@
 import { imdom, im, ImCache, el, ev } from "imcf";
-import { cssVars, imOnBlur, imui } from "imcf/im-ui";
+import { cssVars, imui } from "imcf/im-ui";
 import { imTextAreaBegin, imTextAreaEnd } from "./editable-text-area";
 
 const cssb = imui.newCssBuilder();
@@ -79,7 +79,7 @@ export function imTextInputOneLine(
         }
 
         const inputEvent = imdom.On(c, ev.INPUT);
-        const blur       = imOnBlur(c, input);
+        const focusOut   = imdom.On(c, ev.FOCUSOUT);
         const keyboard   = imdom.getKeyboard();
 
         let lineEnding: string | undefined;
@@ -96,7 +96,7 @@ export function imTextInputOneLine(
             // If multiple lines, need both Shift and enter.
             if (
                 (keyboard.keyDown?.key === "Enter" && keyboard.keyDown.shiftKey) ||
-                blur
+                focusOut
             ) {
                 let value = input.value;
                 val = { submit: true, newName: value }
@@ -104,7 +104,7 @@ export function imTextInputOneLine(
         } else {
             if (
                 keyboard.keyDown?.key === "Enter" || 
-                blur || 
+                focusOut || 
                 lineEnding
             ) {
                 let value = input.value;
